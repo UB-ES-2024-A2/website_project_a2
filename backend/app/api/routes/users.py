@@ -47,6 +47,28 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     return UsersOut(data=users, count=count)
 
 
+@router.get("/by-email/", response_model=UserOut)
+def read_user_by_email(*, session: SessionDep, email: str, password: str) -> Any:
+    """
+    Get a user by email and password.
+    """
+    user = crud.user.get_user_by_email(session=session, email=email)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found with the provided email",
+        )
+
+    # Verificar la contraseña
+    if not verify_password(password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect password",
+        )
+
+    return user
+
 @router.post(
     "/",
     #dependencies=[Depends(get_current_active_superuser)],
