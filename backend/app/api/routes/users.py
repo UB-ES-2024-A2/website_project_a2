@@ -50,7 +50,7 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 @router.get("/by-email/", response_model=UserOut)
 def read_user_by_email(*, session: SessionDep, email: str, password: str) -> Any:
     """
-    Get a user by email and password.
+    Get a user by email and password.111111
     """
     user = crud.user.get_user_by_email(session=session, email=email)
 
