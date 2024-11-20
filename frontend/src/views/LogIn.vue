@@ -51,7 +51,7 @@
 
                   <p class="text-center text-muted mt-5 mb-0">
                     Don’t have an account?
-                    <router-link to="/account" class="text-link">
+                    <router-link to="/signup" class="text-link">
                       <u>Sign up here</u>
                     </router-link>
                   </p>
