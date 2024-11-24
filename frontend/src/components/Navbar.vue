@@ -275,15 +275,27 @@ export default {
       this.filteredSuggestionsUsers = []
       this.filteredSuggestionsBooks = []
 
-      BookService.readBookById(this.id).then(response => {
-        const book = response.data
-        if (book.title !== this.textInput) {
+      if (this.type === 'book') {
+        BookService.readBookById(this.id).then(response => {
+          const book = response.data
+          if (book.title !== this.textInput) {
+            this.$router.push('/not-found')
+          }
+        }).catch(error => {
+          console.error('Error reading a book:', error)
           this.$router.push('/not-found')
-        }
-      }).catch(error => {
-        console.error('Error reading a book:', error)
-        this.$router.push('/not-found')
-      })
+        })
+      } else if (this.type === 'user') {
+        UserService.readUserById(this.id).then(response => {
+          const user = response.data
+          if (user.name + ' ' + user.surname !== this.textInput) {
+            this.$router.push('/not-found')
+          }
+        }).catch(error => {
+          console.error('Error reading a book:', error)
+          this.$router.push('/not-found')
+        })
+      }
 
       if (this.textInput.trim() !== '') {
         this.setPageSearch()
