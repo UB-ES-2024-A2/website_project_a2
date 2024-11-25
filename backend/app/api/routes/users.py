@@ -171,6 +171,10 @@ def read_users(skip: int = 0, limit: int = 100) -> Any:
             cursor.execute(query_users, (limit, skip))
             filas = cursor.fetchall()
 
+            # Count the total number of users
+            query_count = "SELECT COUNT(1) FROM users"
+            cursor.execute(query_count)
+            count = cursor.fetchone()[0]
 
             # Transform tuples to a list of UserOut
             users_data = [
