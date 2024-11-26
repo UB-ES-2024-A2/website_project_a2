@@ -1,6 +1,6 @@
 """ User management routes """
 from typing import Any
-
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select
 
@@ -28,7 +28,7 @@ from app.utils import generate_new_account_email, send_email
 #!pip install mysql-connector-python
 import mysql.connector
 import bcrypt
-#
+
 router = APIRouter()
 
 host = settings.HOST
@@ -142,6 +142,86 @@ def read_users(skip: int = 0, limit: int = 100) -> Any:
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
 
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
+            print("Conexión cerrada")
+
+@router.put("/{user_id}")
+def update_user_fields(
+    user_id: int,
+    user_in: UserUpdate,
+) -> Any:
+    try:
+        # Conexión a la base de datos
+        conexion = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=3306
+        )
+
+        if conexion.is_connected():
+            print("Conexión exitosa a la base de datos")
+            cursor = conexion.cursor()
+
+            # Verificar si el usuario existe
+            query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
+            cursor.execute(query_check_user, (user_id,))
+            existing_user = cursor.fetchone()
+
+            if not existing_user:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found with the provided ID",
+                )
+
+            update_fields = []
+            update_values = []
+
+            if user_in.name is not None:
+                update_fields.append("name = %s")
+                update_values.append(user_in.name)
+            if user_in.surname is not None:
+                update_fields.append("surname = %s")
+                update_values.append(user_in.surname)
+            if user_in.username is not None:
+                update_fields.append("username = %s")
+                update_values.append(user_in.username)
+            if user_in.email is not None:
+                update_fields.append("email = %s")
+                update_values.append(user_in.email)
+            if user_in.password is not None:
+                hashed_password = bcrypt.hashpw(user_in.password.encode('utf-8'), bcrypt.gensalt())
+                update_fields.append("password = %s")
+                update_values.append(hashed_password)
+
+            if not update_fields:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No fields provided for update",
+                )
+
+            # Crear la consulta dinámica
+            query_update_user = f"""
+                UPDATE users
+                SET {', '.join(update_fields)}
+                WHERE id_user = %s
+            """
+            update_values.append(user_id)
+            cursor.execute(query_update_user, tuple(update_values))
+            conexion.commit()
+
+            return {"message": "User updated successfully"}
+
+    except mysql.connector.Error as e:
+        print(f"Error al conectar a MySQL: {e}")
+        raise HTTPException(status_code=500, detail="Error connecting to the database.")
+    except Exception as ex:
+        print(f"Error inesperado: {ex}")
+        raise HTTPException(status_code=400, detail=str(ex))
     finally:
         if conexion.is_connected():
             cursor.close()
