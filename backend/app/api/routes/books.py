@@ -280,6 +280,118 @@ def read_book(book_id: int) -> Any:
             conexion.close()
             print("Conexión cerrada")
 
+@router.post("/books/{id}/comments")
+def create_comment_rating(
+    id: int,  # idBook
+    user_id: int, 
+    comment: str, 
+    rating: int,
+):
+    try:
+        # Validación de la calificación
+        if not (1 <= rating <= 5):
+            raise HTTPException(status_code=400, detail="Rating must be between 1 and 5.")
+
+        # Conexión a la base de datos
+        conexion = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=3306
+        )
+
+        if conexion.is_connected():
+            cursor = conexion.cursor()
+
+            # Verificar que el libro existe
+            query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
+            cursor.execute(query_check_book, (id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Book not found.")
+
+            # Verificar que el usuario existe
+            query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
+            cursor.execute(query_check_user, (user_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="User not found.")
+
+            # Insertar comentario y calificación
+            query_insert = """
+                INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
+                VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(query_insert, (user_id, id, comment, rating))
+            conexion.commit()
+
+            return {"message": "Comment and rating successfully added."}
+
+    except mysql.connector.Error as e:
+        print(f"MySQL Error: {e}")
+        raise HTTPException(status_code=500, detail="Database connection error.")
+    
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
+@router.get("/CommentRatingPerBook/{idBook}")
+def get_comments_ratings(idBook: int):
+    try:
+        # Conexión a la base de datos
+        conexion = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=3306
+        )
+
+        if conexion.is_connected():
+            cursor = conexion.cursor()
+
+            # Verificar que el libro existe
+            query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
+            cursor.execute(query_check_book, (idBook,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Book not found.")
+
+            # Obtener los comentarios y calificaciones del libro
+            query_get_comments = """
+                SELECT crp.IdCommentRating, crp.IdUser, crp.Comment, crp.Rating, u.username
+                FROM CommentRatingPerBook crp
+                JOIN users u ON crp.IdUser = u.id_user
+                WHERE crp.IdBook = %s
+            """
+            cursor.execute(query_get_comments, (idBook,))
+            rows = cursor.fetchall()
+
+            if not rows:
+                return {"message": "No comments or ratings found for this book."}
+
+            # Crear lista de respuestas
+            comments_data = [
+                {
+                    "id_comment_rating": row[0],
+                    "user_id": row[1],
+                    "username": row[4],  # Incluyendo el nombre de usuario
+                    "comment": row[2],
+                    "rating": row[3]
+                }
+                for row in rows
+            ]
+
+            return {"comments": comments_data}
+
+    except mysql.connector.Error as e:
+        print(f"MySQL Error: {e}")
+        raise HTTPException(status_code=500, detail="Database connection error.")
+    
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
 
 @router.post("/", response_model=BookOut)
 def create_book(book_in: BookCreate) -> Any:
@@ -516,4 +628,3 @@ def delete_book(book_id: int) -> Any:
             cursor.close()
             conexion.close()
             print("Conexión cerrada")
-
