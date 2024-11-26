@@ -1,7 +1,7 @@
 <template>
     <div id="main-page" class="main-page" :class="view" v-if="searchResults && searchResults[0].list">
         <div class="col"  style="padding: var(--panel-gap)" v-for="(column, index) in searchResults" :key="index">
-          <div class="header-content">
+          <div class="header-content" v-show="column.list.length > 0">
             <div class="title-wrap">
               <h3 class="main-page-title" v-if="column.title">
                 {{ column.title }}
@@ -32,7 +32,7 @@
 import GridTab from '@/components/GridTab'
 import ListTab from '@/components/ListTab'
 import CompactTab from '@/components/CompactTab'
-import GridPlaceholder from '@/components/GridPlaceholder'
+import GridPlaceHolder from '@/components/GridPlaceHolder'
 import ListPlaceHolder from '@/components/ListPlaceHolder'
 import CompactPlaceHolder from '@/components/CompactPlaceHolder'
 
@@ -52,7 +52,7 @@ export default {
     'grid': GridTab,
     'list': ListTab,
     'compact': CompactTab,
-    'grid-holder': GridPlaceholder,
+    'grid-holder': GridPlaceHolder,
     'list-holder': ListPlaceHolder,
     'compact-holder': CompactPlaceHolder
   },
