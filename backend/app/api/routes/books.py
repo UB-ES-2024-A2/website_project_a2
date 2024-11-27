@@ -1,46 +1,20 @@
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 import mysql.connector
 
-from app.core.config import settings
-from app.models import Book, BookCreate, BookOut, BooksOut, BookUpdate
+from app.models import BookCreate, BookOut, BooksOut, BookUpdate
 
-from sqlmodel import col, delete, func, select
-
-from app import crud
-from app.api.deps import (
-    CurrentUser,
-    SessionDep,
-    get_current_active_superuser,
-)
-from app.core.config import settings
+from app.api.deps import SessionDep
 
 router = APIRouter()
 
-# Configuración de la base de datos
-host = settings.HOST
-user = settings.USERDB
-password = settings.PASSWORD
-database = settings.DATABASE
-
 @router.post("/filter-by-genres", response_model=BooksOut)
-def filter_books_by_genres(genres: list[str]) -> Any:
+def filter_books_by_genres(session: SessionDep, genres: list[str]) -> Any:
     """
     Retrieve books that match any of the genres provided in the list.
     """
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Crear la consulta dinámica para los géneros
             query_books = f"""
@@ -83,27 +57,14 @@ def filter_books_by_genres(genres: list[str]) -> Any:
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
 
 
 @router.get("/{keyword}", response_model=BooksOut)
-def read_top5_matched_books(keyword: str) -> Any:
+def read_top5_matched_books(session: SessionDep, keyword: str) -> Any:
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Crear la consulta de búsqueda
             query = """
@@ -149,34 +110,21 @@ def read_top5_matched_books(keyword: str) -> Any:
 
 
     except mysql.connector.Error as err:
-        print(f"Error al conectar a MySQL: {e}")
+        print(f"Error al conectar a MySQL: {err}")
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
 
 
 @router.get("/", response_model=BooksOut)
-def read_books(skip: int = 0, limit: int = 100) -> Any:
+def read_books(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
     Retrieve books with pagination.
     """
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Consulta para obtener los libros con paginación
             query_books = """
@@ -216,30 +164,17 @@ def read_books(skip: int = 0, limit: int = 100) -> Any:
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
 
 
 @router.get("/book/{book_id}", response_model=BookOut)
-def read_book(book_id: int) -> Any:
+def read_book(session: SessionDep, book_id: int) -> Any:
     """
     Retrieve a specific book by its ID.
     """
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Consulta para obtener un libro por su ID
             query_book = """
@@ -275,16 +210,14 @@ def read_book(book_id: int) -> Any:
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
 
 @router.post("/books/{id}/comments")
 def create_comment_rating(
     id: int,  # idBook
-    user_id: int, 
-    comment: str, 
+    user_id: int,
+    comment: str,
     rating: int,
 ):
     try:
@@ -329,7 +262,7 @@ def create_comment_rating(
     except mysql.connector.Error as e:
         print(f"MySQL Error: {e}")
         raise HTTPException(status_code=500, detail="Database connection error.")
-    
+
     finally:
         if conexion.is_connected():
             cursor.close()
@@ -386,7 +319,7 @@ def get_comments_ratings(idBook: int):
     except mysql.connector.Error as e:
         print(f"MySQL Error: {e}")
         raise HTTPException(status_code=500, detail="Database connection error.")
-    
+
     finally:
         if conexion.is_connected():
             cursor.close()
@@ -394,26 +327,15 @@ def get_comments_ratings(idBook: int):
 
 
 @router.post("/", response_model=BookOut)
-def create_book(book_in: BookCreate) -> Any:
+def create_book(session: SessionDep, book_in: BookCreate) -> Any:
     """
     Create a new book.
     """
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Verificar si el libro ya existe por título
-            query_check_book = "SELECT id_book FROM books WHERE title = %s"
+            query_check_book = "SELECT Title FROM Books WHERE title = %s"
             cursor.execute(query_check_book, (book_in.title,))
             existing_book = cursor.fetchone()
 
@@ -441,7 +363,7 @@ def create_book(book_in: BookCreate) -> Any:
             ))
 
             # Confirmar la transacción
-            conexion.commit()
+            session.commit()
 
             # Obtener el ID del libro recién creado
             new_book_id = cursor.lastrowid
@@ -468,30 +390,17 @@ def create_book(book_in: BookCreate) -> Any:
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
 
 
 @router.put("/{book_id}", response_model=BookOut)
-def update_book(book_id: int, book_in: BookUpdate) -> Any:
+def update_book(session: SessionDep, book_id: int, book_in: BookUpdate) -> Any:
     """
     Update an existing book by its ID.
     """
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Verificar si el libro existe por su ID
             query_check_book = "SELECT IdBook as id_book FROM books WHERE IdBook = %s"
@@ -525,13 +434,9 @@ def update_book(book_id: int, book_in: BookUpdate) -> Any:
             ))
 
             # Confirmar la transacción
-            conexion.commit()
+            session.commit()
 
             # Obtener los datos actualizados
-            '''
-            
-                WHERE IdBook = %s
-            '''
             query_updated_book = """SELECT IdBook as id_book, Title as title, Authors as authors, Synopsis as synopsis, BuyLink as buy_link, 
                 Genres as genres, Rating as rating, Editorial as editorial, Comments as comments, PublicationDate as publication_date, Image as image from Books WHERE IdBook = %s"""
             cursor.execute(query_updated_book, (book_id,))
@@ -559,30 +464,17 @@ def update_book(book_id: int, book_in: BookUpdate) -> Any:
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
 
 
 @router.delete("/{book_id}", response_model=BookOut)
-def delete_book(book_id: int) -> Any:
+def delete_book(session: SessionDep, book_id: int) -> Any:
     """
     Delete a book by its ID.
     """
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Verificar si el libro existe
             query_check_book = "SELECT IdBooks FROM Books WHERE IdBook = %s"
@@ -600,7 +492,7 @@ def delete_book(book_id: int) -> Any:
             cursor.execute(query_delete_book, (book_id,))
 
             # Confirmar la transacción
-            conexion.commit()
+            session.commit()
 
             # Devolver el libro eliminado
             deleted_book = BookOut(
@@ -624,7 +516,6 @@ def delete_book(book_id: int) -> Any:
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
+
