@@ -7,7 +7,8 @@ from app.api.deps import SessionDep
 from app.models import (
     UserCreate,
     UserOut,
-    UsersOut
+    UsersOut,
+    UserUpdate
 )
 
 import mysql.connector
@@ -140,22 +141,12 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 
 @router.put("/{user_id}")
 def update_user_fields(
+    session: SessionDep,
     user_id: int,
     user_in: UserUpdate,
 ) -> Any:
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Verificar si el usuario existe
             query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
@@ -202,7 +193,7 @@ def update_user_fields(
             """
             update_values.append(user_id)
             cursor.execute(query_update_user, tuple(update_values))
-            conexion.commit()
+            session.commit()
 
             return {"message": "User updated successfully"}
 
