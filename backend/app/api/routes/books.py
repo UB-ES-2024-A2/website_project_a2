@@ -322,8 +322,14 @@ def create_comment_rating(
                 VALUES (%s, %s, %s, %s)
             """
             cursor.execute(query_insert, (user_id, id, comment, rating))
-            conexion.commit()
 
+            query_avg_rating = "SELECT AVG(Rating) FROM CommentRatingPerBook WHERE IdBook = %s"
+            cursor.execute(query_avg_rating, (id,))
+            avg_rating = cursor.fetchone()[0]
+
+            query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
+            cursor.execute(query_update_book, (avg_rating, id))
+            conexion.commit()
             return {"message": "Comment and rating successfully added."}
 
     except mysql.connector.Error as e:
