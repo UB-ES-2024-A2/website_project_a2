@@ -519,3 +519,52 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
         if session.is_connected():
             cursor.close()
 
+@router.delete("/CommentRatingPerBook/{comment_id}")
+def delete_comment(comment_id: int):
+    try:
+        # Conexión a la base de datos
+        conexion = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=3306
+        )
+
+        if conexion.is_connected():
+            cursor = conexion.cursor()
+
+            # Verificar que el comentario existe
+            query_check_comment = "SELECT IdBook FROM CommentRatingPerBook WHERE IdCommentRating = %s"
+            cursor.execute(query_check_comment, (comment_id,))
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=404, detail="Comment not found.")
+
+            # Obtener el IdBook del comentario
+            id_book = result[0]
+
+            # Eliminar el comentario
+            query_delete = "DELETE FROM CommentRatingPerBook WHERE IdCommentRating = %s"
+            cursor.execute(query_delete, (comment_id,))
+
+            # Recalcular el promedio de calificación
+            query_avg_rating = "SELECT AVG(Rating) FROM CommentRatingPerBook WHERE IdBook = %s"
+            cursor.execute(query_avg_rating, (id_book,))
+            avg_rating = cursor.fetchone()[0] or 0  # Si no hay calificaciones, promedio es 0
+
+            # Actualizar el promedio en la tabla de libros
+            query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
+            cursor.execute(query_update_book, (avg_rating, id_book))
+
+            conexion.commit()
+            return {"message": "Comment successfully deleted."}
+
+    except mysql.connector.Error as e:
+        print(f"MySQL Error: {e}")
+        raise HTTPException(status_code=500, detail="Database connection error.")
+
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
