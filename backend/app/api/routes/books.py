@@ -242,9 +242,9 @@ def create_comment_rating(
 
         # Insertar comentario y calificación
         query_insert = """
-            INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
-            VALUES (%s, %s, %s, %s)
-        """
+                INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
+                VALUES (%s, %s, %s, %s)
+            """
         cursor.execute(query_insert, (user_id, id, comment, rating))
 
         query_avg_rating = "SELECT AVG(Rating) FROM CommentRatingPerBook WHERE IdBook = %s"
@@ -312,7 +312,6 @@ def get_comments_ratings(
     finally:
         if session.is_connected():
             cursor.close()
-
 
 @router.post("/", response_model=BookOut)
 def create_book(session: SessionDep, book_in: BookCreate) -> Any:
@@ -456,7 +455,7 @@ def update_book(session: SessionDep, book_id: int, book_in: BookUpdate) -> Any:
             cursor.close()
 
 
-@router.delete("/{book_id}", response_model=BookOut)
+@router.delete("/{book_id}")
 def delete_book(session: SessionDep, book_id: int) -> Any:
     """
     Delete a book by its ID.
@@ -482,22 +481,7 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
             # Confirmar la transacción
             session.commit()
 
-            # Devolver el libro eliminado
-            deleted_book = BookOut(
-                id_book=book_id,
-                title="Deleted",
-                authors="Deleted",
-                synopsis="Deleted",
-                buy_link="Deleted",
-                genres="Deleted",
-                rating=0,
-                editorial="Deleted",
-                comments="Deleted",
-                publication_date="Deleted",
-                image="Deleted"
-            )
-
-            return deleted_book
+            return {"message": "Book successfully deleted."}
 
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
@@ -508,19 +492,9 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
             cursor.close()
 
 @router.delete("/CommentRatingPerBook/{comment_id}")
-def delete_comment(comment_id: int):
+def delete_comment(session: SessionDep, comment_id: int):
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Verificar que el comentario existe
             query_check_comment = "SELECT IdBook FROM CommentRatingPerBook WHERE IdCommentRating = %s"
@@ -545,7 +519,7 @@ def delete_comment(comment_id: int):
             query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
             cursor.execute(query_update_book, (avg_rating, id_book))
 
-            conexion.commit()
+            session.commit()
             return {"message": "Comment successfully deleted."}
 
     except mysql.connector.Error as e:
@@ -553,6 +527,5 @@ def delete_comment(comment_id: int):
         raise HTTPException(status_code=500, detail="Database connection error.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
