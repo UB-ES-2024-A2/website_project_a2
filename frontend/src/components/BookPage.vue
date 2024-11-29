@@ -37,6 +37,9 @@
       </div>
       <div v-else class="no-data">No book data available</div>
     </div>
+    <div v-else class="user-page-wrap">
+      Users page info for {{ textInput }}
+    </div>
   </div>
 </template>
 

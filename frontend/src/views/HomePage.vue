@@ -40,7 +40,7 @@ import BookService from '../services/BookService'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
-  SEARCH: 'book-page',
+  BOOK: 'book-page',
   CATEGORY: 'category',
   PROFILE: 'Profile'
 })
@@ -153,12 +153,12 @@ export default {
       }
     },
     startSearch (data) {
-      this.currentTab = PageEnum.SEARCH
       console.log('Searching for:', data)
 
       // If a request is made to the API, it should be async
       // Book example
       if (data[1] === 'book') {
+        this.currentTab = PageEnum.BOOK
         this.searchResults = [
           {
             title: 'Search',
@@ -170,6 +170,7 @@ export default {
           }
         ]
       } else if (data[1] === 'user') {
+        this.currentTab = PageEnum.BOOK
         // User example
         this.searchResults = [
           {
