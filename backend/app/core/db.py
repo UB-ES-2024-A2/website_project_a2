@@ -28,7 +28,7 @@ def init_db(cursor) -> None:
     )
 
     # Check if the test user exists
-    cursor.execute("SELECT id_user FROM users WHERE email = %s", (test_user.email,))
+    cursor.execute("SELECT * FROM users WHERE email = %s", (test_user.email,))
     userTest = cursor.fetchone()
 
     if not userTest:
@@ -45,6 +45,10 @@ def init_db(cursor) -> None:
             test_user.password
         ))
 
+        user_id = cursor.lastrowid
+    else:
+        user_id = userTest[0]
+
     # Creating a BookCreate instance for testing
     testBook = BookCreate(
         title="Test Book",
@@ -60,7 +64,7 @@ def init_db(cursor) -> None:
     )
 
     # Check if the test book exists
-    cursor.execute("SELECT Title FROM Books WHERE title = %s", (testBook.title,))
+    cursor.execute("SELECT * FROM Books WHERE Title = %s", (testBook.title,))
     book = cursor.fetchone()
 
     if not book:
@@ -82,3 +86,46 @@ def init_db(cursor) -> None:
             testBook.image
         ))
 
+        book_id = cursor.lastrowid
+    else:
+        book_id = book[0]
+
+    # Insert a sample rating into the database
+    query_create_rating ="""
+        INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
+        VALUES (%s, %s, %s, %s)
+    """
+
+    cursor.execute(query_create_rating, (
+        user_id,
+        book_id,
+        'Test Comment',
+        1
+    ))
+
+    # Creating a BookCreate instance for testing without comments
+    testBook.title = 'Test Book2'
+    testBook.genres = 'Test Book2'
+
+    # Check if the test book exists
+    cursor.execute("SELECT * FROM Books WHERE Title = %s", (testBook.title,))
+    book = cursor.fetchone()
+
+    if not book:
+        # Insert a sample book into the database
+        query_create_book = """
+                            INSERT INTO Books (Title, Authors, Synopsis, BuyLink, Genres, Rating, Editorial, Comments, PublicationDate, Image)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """
+        cursor.execute(query_create_book, (
+            testBook.title,
+            testBook.authors,
+            testBook.synopsis,
+            testBook.buy_link,
+            testBook.genres,
+            testBook.rating,
+            testBook.editorial,
+            testBook.comments,
+            testBook.publication_date,
+            testBook.image
+        ))

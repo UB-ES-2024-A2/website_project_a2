@@ -106,3 +106,48 @@ def test_get_book_by_not_id(client: TestClient, db) -> None:
 
     assert response.status_code == 422
     assert book["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
+
+def test_get_rating(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the rating
+    response = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
+
+    assert response.status_code == 200
+    rating = response.json()['comments'][0]
+    assert rating["username"] == "test"
+    assert rating['comment'] == "Test Comment"
+    assert rating['rating'] == 1
+
+def test_get_rating_not_found_book(client: TestClient, db) -> None:
+    # Get the book id
+    book_id = -1
+
+    # Get the rating
+    response = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
+
+    assert response.status_code == 404
+    message = response.json()
+    assert message["detail"] == "Book not found."
+
+def test_get_rating_book_without_ratin(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book2"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the rating
+    response = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
+
+    assert response.status_code == 200
+    message = response.json()
+    assert message["message"] == "No comments or ratings found for this book."
+
+def test_get_rating_invalid_id(client: TestClient, db) -> None:
+    # Get the rating
+    response = client.get("api/v1/books/CommentRatingPerBook/h")
+
+    assert response.status_code == 422
+    message = response.json()
+    assert message["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
