@@ -215,116 +215,103 @@ def read_book(session: SessionDep, book_id: int) -> Any:
 
 @router.post("/books/{id}/comments")
 def create_comment_rating(
+    session: SessionDep,
     id: int,  # idBook
     user_id: int,
     comment: str,
     rating: int,
 ):
     try:
+        cursor = session.cursor()
+
         # Validación de la calificación
         if not (1 <= rating <= 5):
             raise HTTPException(status_code=400, detail="Rating must be between 1 and 5.")
 
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
+        # Verificar que el libro existe
+        query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
+        cursor.execute(query_check_book, (id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Book not found.")
 
-        if conexion.is_connected():
-            cursor = conexion.cursor()
+        # Verificar que el usuario existe
+        query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
+        cursor.execute(query_check_user, (user_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="User not found.")
 
-            # Verificar que el libro existe
-            query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
-            cursor.execute(query_check_book, (id,))
-            if not cursor.fetchone():
-                raise HTTPException(status_code=404, detail="Book not found.")
-
-            # Verificar que el usuario existe
-            query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
-            cursor.execute(query_check_user, (user_id,))
-            if not cursor.fetchone():
-                raise HTTPException(status_code=404, detail="User not found.")
-
-            # Insertar comentario y calificación
-            query_insert = """
+        # Insertar comentario y calificación
+        query_insert = """
                 INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
                 VALUES (%s, %s, %s, %s)
             """
-            cursor.execute(query_insert, (user_id, id, comment, rating))
-            conexion.commit()
+        cursor.execute(query_insert, (user_id, id, comment, rating))
 
-            return {"message": "Comment and rating successfully added."}
+        query_avg_rating = "SELECT AVG(Rating) FROM CommentRatingPerBook WHERE IdBook = %s"
+        cursor.execute(query_avg_rating, (id,))
+        avg_rating = cursor.fetchone()[0]
+
+        query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
+        cursor.execute(query_update_book, (avg_rating, id))
+        session.commit()
+
+        return {"message": "Comment and rating successfully added."}
 
     except mysql.connector.Error as e:
         print(f"MySQL Error: {e}")
         raise HTTPException(status_code=500, detail="Database connection error.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
 
 @router.get("/CommentRatingPerBook/{idBook}")
-def get_comments_ratings(idBook: int):
+def get_comments_ratings(
+        session: SessionDep,
+        idBook: int):
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
+        cursor = session.cursor()
 
-        if conexion.is_connected():
-            cursor = conexion.cursor()
+        # Verificar que el libro existe
+        query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
+        cursor.execute(query_check_book, (idBook,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Book not found.")
 
-            # Verificar que el libro existe
-            query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
-            cursor.execute(query_check_book, (idBook,))
-            if not cursor.fetchone():
-                raise HTTPException(status_code=404, detail="Book not found.")
+        # Obtener los comentarios y calificaciones del libro
+        query_get_comments = """
+            SELECT crp.IdCommentRating, crp.IdUser, crp.Comment, crp.Rating, u.username
+            FROM CommentRatingPerBook crp
+            JOIN users u ON crp.IdUser = u.id_user
+            WHERE crp.IdBook = %s
+        """
+        cursor.execute(query_get_comments, (idBook,))
+        rows = cursor.fetchall()
 
-            # Obtener los comentarios y calificaciones del libro
-            query_get_comments = """
-                SELECT crp.IdCommentRating, crp.IdUser, crp.Comment, crp.Rating, u.username
-                FROM CommentRatingPerBook crp
-                JOIN users u ON crp.IdUser = u.id_user
-                WHERE crp.IdBook = %s
-            """
-            cursor.execute(query_get_comments, (idBook,))
-            rows = cursor.fetchall()
+        if not rows:
+            return {"message": "No comments or ratings found for this book."}
 
-            if not rows:
-                return {"message": "No comments or ratings found for this book."}
+        # Crear lista de respuestas
+        comments_data = [
+            {
+                "id_comment_rating": row[0],
+                "user_id": row[1],
+                "username": row[4],  # Incluyendo el nombre de usuario
+                "comment": row[2],
+                "rating": row[3]
+            }
+            for row in rows
+        ]
 
-            # Crear lista de respuestas
-            comments_data = [
-                {
-                    "id_comment_rating": row[0],
-                    "user_id": row[1],
-                    "username": row[4],  # Incluyendo el nombre de usuario
-                    "comment": row[2],
-                    "rating": row[3]
-                }
-                for row in rows
-            ]
-
-            return {"comments": comments_data}
+        return {"comments": comments_data}
 
     except mysql.connector.Error as e:
         print(f"MySQL Error: {e}")
         raise HTTPException(status_code=500, detail="Database connection error.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-
 
 @router.post("/", response_model=BookOut)
 def create_book(session: SessionDep, book_in: BookCreate) -> Any:
@@ -468,7 +455,7 @@ def update_book(session: SessionDep, book_id: int, book_in: BookUpdate) -> Any:
             cursor.close()
 
 
-@router.delete("/{book_id}", response_model=BookOut)
+@router.delete("/{book_id}")
 def delete_book(session: SessionDep, book_id: int) -> Any:
     """
     Delete a book by its ID.
@@ -494,22 +481,7 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
             # Confirmar la transacción
             session.commit()
 
-            # Devolver el libro eliminado
-            deleted_book = BookOut(
-                id_book=book_id,
-                title="Deleted",
-                authors="Deleted",
-                synopsis="Deleted",
-                buy_link="Deleted",
-                genres="Deleted",
-                rating=0,
-                editorial="Deleted",
-                comments="Deleted",
-                publication_date="Deleted",
-                image="Deleted"
-            )
-
-            return deleted_book
+            return {"message": "Book successfully deleted."}
 
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
@@ -520,19 +492,9 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
             cursor.close()
 
 @router.delete("/CommentRatingPerBook/{comment_id}")
-def delete_comment(comment_id: int):
+def delete_comment(session: SessionDep, comment_id: int):
     try:
-        # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Verificar que el comentario existe
             query_check_comment = "SELECT IdBook FROM CommentRatingPerBook WHERE IdCommentRating = %s"
@@ -557,7 +519,7 @@ def delete_comment(comment_id: int):
             query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
             cursor.execute(query_update_book, (avg_rating, id_book))
 
-            conexion.commit()
+            session.commit()
             return {"message": "Comment successfully deleted."}
 
     except mysql.connector.Error as e:
@@ -565,6 +527,5 @@ def delete_comment(comment_id: int):
         raise HTTPException(status_code=500, detail="Database connection error.")
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
