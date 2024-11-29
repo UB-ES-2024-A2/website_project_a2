@@ -1,15 +1,7 @@
-import pytest
 from fastapi.testclient import TestClient
-from app.main import app
 
-client = TestClient(app)
-
-@pytest.fixture
-def mock_database():
-    pass
-
-def test_read_top5_matched_users(mock_database):
-    keyword = "userTest"
+def test_read_top5_matched_users(client: TestClient, db) -> None:
+    keyword = "Test"
     response = client.get(f"/api/v1/users/{keyword}")
 
     assert response.status_code == 200
@@ -28,7 +20,7 @@ def test_read_top5_matched_users(mock_database):
         assert "username" in user
         assert "email" in user
 
-def test_read_users(mock_database):
+def test_read_users(client: TestClient, db) -> None:
     skip = 0
     limit = 10
     

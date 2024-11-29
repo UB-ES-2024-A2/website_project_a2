@@ -1,38 +1,20 @@
 """ SignUp related routes """
-from fastapi import APIRouter, Depends, HTTPException
-from app import crud
+from fastapi import APIRouter, HTTPException
 from app.api.deps import SessionDep
 from app.models import UserCreate, UserOut
-from app.core.security import get_password_hash
 import mysql.connector
-from app.core.config import settings
+import bcrypt
 from typing import Any
 
 router = APIRouter()
-host = settings.HOST
-user = settings.USERDB
-password = settings.PASSWORD
-database = settings.DATABASE
-
 
 @router.post("/signup", response_model=UserOut)
-def signup_user(*, user_in: UserCreate) -> Any:
+def signup_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """
     Sign up a new user with email and password.
     """
     try:
-        # Connect to the database
-        conexion = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=3306
-        )
-
-        if conexion.is_connected():
-            print("Conexión exitosa a la base de datos")
-            cursor = conexion.cursor()
+            cursor = session.cursor()
 
             # Check if the email or username already exists
             query_existing_user = "SELECT id_user FROM users WHERE email = %s OR username = %s"
@@ -59,7 +41,7 @@ def signup_user(*, user_in: UserCreate) -> Any:
                 user_in.email,
                 hashed_password,
             ))
-            conexion.commit()  # Commit the transaction
+            session.commit()  # Commit the transaction
 
             # Get the id of the new user
             new_user_id = cursor.lastrowid
@@ -84,7 +66,5 @@ def signup_user(*, user_in: UserCreate) -> Any:
         raise HTTPException(status_code=400, detail=str(ex))
 
     finally:
-        if conexion.is_connected():
+        if session.is_connected():
             cursor.close()
-            conexion.close()
-            print("Conexión cerrada")
