@@ -165,35 +165,19 @@ export default {
             list:
               {
                 type: 'book',
-                data: {
-                  title: 'Book1',
-                  Authors: 'AuthorsName',
-                  Synopsis: 'Synopsis info',
-                  BuyLink: 'BuyLink info',
-                  Genres: 'Gerne1, Gernre2',
-                  Rating: 0.0,
-                  Editorial: 'EditorialName',
-                  Comments: [],
-                  PublicationDate: '11/11/11',
-                  Image: 'image'
-                }
+                data: data[0]
               }
           }
         ]
       } else if (data[1] === 'user') {
-        //  User example
+        // User example
         this.searchResults = [
           {
             title: 'Search',
             list:
               {
                 type: 'user',
-                data: {
-                  name: 'Book1',
-                  surname: 'AuthorsName',
-                  username: 'Synopsis info',
-                  email: 'BuyLink info'
-                }
+                data: data[0]
               }
           }
         ]
