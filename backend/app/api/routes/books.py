@@ -313,6 +313,7 @@ def get_comments_ratings(
         if session.is_connected():
             cursor.close()
 
+
 @router.post("/", response_model=BookOut)
 def create_book(session: SessionDep, book_in: BookCreate) -> Any:
     """
