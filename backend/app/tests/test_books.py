@@ -106,3 +106,19 @@ def test_get_book_by_not_id(client: TestClient, db) -> None:
 
     assert response.status_code == 422
     assert book["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
+
+def test_get_books(client: TestClient, db) -> None:
+    # Get all books
+    response = client.get("/api/v1/books")
+
+    assert response.status_code == 200
+    books = response.json()['data']
+    assert len(books) > 0
+
+def test_get_two_books(client: TestClient, db) -> None:
+    # Get first two books
+    response = client.get("/api/v1/books/?skip=0&limit=2")
+
+    assert response.status_code == 200
+    books = response.json()['data']
+    assert len(books) == 2
