@@ -101,6 +101,50 @@ def read_user(session: SessionDep, user_id: int) -> Any:
         if session.is_connected():
             cursor.close()
 
+@router.get("/by-email/{user_mail}", response_model=UserOut)
+def read_user_by_email(session: SessionDep, user_mail: str) -> Any:
+    """
+    Get a user by its email.
+    """
+    try:
+        cursor = session.cursor()
+
+        # Query for getting the user by email
+        query_user = """
+        SELECT id_user, name, surname, username, email
+        FROM users 
+        WHERE email = %s
+        """
+        cursor.execute(query_user, (user_mail,))
+        user_row = cursor.fetchone()
+
+        if not user_row:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found with the provided email"
+            )
+
+        # Create the UserOut object for the user read
+        user_out = UserOut(
+            id_user=user_row[0],
+            name=user_row[1],
+            surname=user_row[2],
+            username=user_row[3],
+            email=user_row[4],
+        )
+
+        return user_out
+    except mysql.connector.Error as e:
+        print(f"Error al conectar a MySQL: {e}")
+        raise HTTPException(status_code=500, detail="Error connecting to the database.")
+    except Exception as ex:
+        print(f"Error al obtener el usuario: {ex}")
+        raise HTTPException(status_code=500, detail=str(ex))
+
+    finally:
+        if session.is_connected():
+            cursor.close()
+
 @router.get("/")
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
@@ -276,47 +320,6 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
-
-    finally:
-        if session.is_connected():
-            cursor.close()
-
-@router.get("/by-email", response_model=UserOut)
-def read_user_by_email(*, session: SessionDep, email: str) -> Any:
-    """
-    Get a user by email.
-    """
-    try:
-        cursor = session.cursor()
-
-        # Consulta para obtener el usuario por email
-        query_user = "SELECT id_user, name, surname, username, email, password FROM users WHERE email = %s"
-        cursor.execute(query_user, (email,))
-        user_row = cursor.fetchone()
-
-        if not user_row:
-            raise HTTPException(
-                status_code=404,
-                detail="User not found with the provided email",
-            )
-
-        # Crear el objeto UserOut basado en los datos obtenidos
-        user_out = UserOut(
-            id_user=user_row[0],
-            name=user_row[1],
-            surname=user_row[2],
-            username=user_row[3],
-            email=user_row[4],
-        )
-
-        return user_out
-
-    except mysql.connector.Error as e:
-        print(f"Error al conectar a MySQL: {e}")
-        raise HTTPException(status_code=500, detail="Error connecting to the database.")
-    except Exception as ex:
-        print(f"Error al obtener el usuario: {ex}")
-        raise HTTPException(status_code=400, detail=str(ex))
 
     finally:
         if session.is_connected():

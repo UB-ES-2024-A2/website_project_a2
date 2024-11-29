@@ -106,3 +106,111 @@ def test_get_book_by_not_id(client: TestClient, db) -> None:
 
     assert response.status_code == 422
     assert book["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
+
+def test_post_book_rating(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the user id
+    user_mail = "test@test"
+    user_searched = client.get(f"/api/v1/users/by-email/{user_mail}")
+    user_id = user_searched.json()['id_user']
+
+    # Post rating
+    response = client.post(
+        f'/api/v1/books/books/{book_id}/comments',
+        params={
+            "user_id": user_id,
+            "comment": "test",
+            "rating": 5,
+        })
+
+    assert response.status_code == 200
+    message = response.json()
+    assert message['message'] == "Comment and rating successfully added."
+
+def test_post_book_rating_not_found_book(client: TestClient, db) -> None:
+    # Get the book id
+    book_id = -1
+
+    # Get the user id
+    user_mail = "test@test"
+    user_searched = client.get(f"/api/v1/users/by-email/{user_mail}")
+    user_id = user_searched.json()['id_user']
+
+    # Post rating
+    response = client.post(
+        f'/api/v1/books/books/{book_id}/comments',
+        params={
+            "user_id": user_id,
+            "comment": "test",
+            "rating": 5,
+        })
+
+    assert response.status_code == 404
+    message = response.json()
+    assert message["detail"] == "Book not found."
+
+def test_post_book_rating_not_found_user(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the user id
+    user_id = -1
+
+    # Post rating
+    response = client.post(
+        f'/api/v1/books/books/{book_id}/comments',
+        params={
+            "user_id": user_id,
+            "comment": "test",
+            "rating": 5,
+        })
+
+    assert response.status_code == 404
+    message = response.json()
+    assert message['detail'] == "User not found."
+
+def test_post_book_rating_not_valid_rating(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the user id
+    user_mail = "test@test"
+    user_searched = client.get(f"/api/v1/users/by-email/{user_mail}")
+    user_id = user_searched.json()['id_user']
+
+    # Get the rating
+    rating = -1
+
+    # Post rating
+    response = client.post(
+        f'/api/v1/books/books/{book_id}/comments',
+        params={
+            "user_id": user_id,
+            "comment": "test",
+            "rating": rating,
+        })
+
+    assert response.status_code == 400
+    message = response.json()
+    assert message['detail'] == "Rating must be between 1 and 5."
+
+def test_post_book_rating_not_param(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Post rating
+    response = client.post(
+        f'/api/v1/books/books/{book_id}/comments')
+
+    print('response', response)
+    print('message', response.json())
+
+    assert response.status_code == 422
+    message = response.json()
+    assert message['detail'][0]['msg'] == 'Field required'
