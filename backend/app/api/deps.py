@@ -6,11 +6,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
+from mysql.connector import MySQLConnection
 
 from app.core import security
 from app.core.config import settings
 from app.core.db import get_db_connection
-from mysql.connector import MySQLConnection
 from app.models import User, TokenPayload
 
 reusable_oauth2 = OAuth2PasswordBearer(
