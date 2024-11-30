@@ -1,9 +1,9 @@
 """ Database configuration """
+from datetime import datetime
 import mysql.connector
 
 from app.models import UserCreate, BookCreate
 from app.core.config import settings
-from datetime import datetime
 
 def get_db_connection():
     """ Creates a connection to the production database """
@@ -29,9 +29,9 @@ def init_db(cursor) -> None:
 
     # Check if the test user exists
     cursor.execute("SELECT * FROM users WHERE email = %s", (test_user.email,))
-    userTest = cursor.fetchone()
+    existing_user = cursor.fetchone()
 
-    if not userTest:
+    if not existing_user:
         # Insert user test in the db
         query_create_user = """
             INSERT INTO users (name, surname, username, email, password)
@@ -47,10 +47,10 @@ def init_db(cursor) -> None:
 
         user_id = cursor.lastrowid
     else:
-        user_id = userTest[0]
+        user_id = existing_user[0]
 
     # Creating a BookCreate instance for testing
-    testBook = BookCreate(
+    test_book = BookCreate(
         title="Test Book",
         authors="Test Book",
         synopsis="Test Book",
@@ -64,7 +64,7 @@ def init_db(cursor) -> None:
     )
 
     # Check if the test book exists
-    cursor.execute("SELECT * FROM Books WHERE Title = %s", (testBook.title,))
+    cursor.execute("SELECT * FROM Books WHERE Title = %s", (test_book.title,))
     book = cursor.fetchone()
 
     if not book:
@@ -74,16 +74,16 @@ def init_db(cursor) -> None:
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
         cursor.execute(query_create_book, (
-            testBook.title,
-            testBook.authors,
-            testBook.synopsis,
-            testBook.buy_link,
-            testBook.genres,
-            testBook.rating,
-            testBook.editorial,
-            testBook.comments,
-            testBook.publication_date,
-            testBook.image
+            test_book.title,
+            test_book.authors,
+            test_book.synopsis,
+            test_book.buy_link,
+            test_book.genres,
+            test_book.rating,
+            test_book.editorial,
+            test_book.comments,
+            test_book.publication_date,
+            test_book.image
         ))
 
         book_id = cursor.lastrowid
@@ -102,4 +102,31 @@ def init_db(cursor) -> None:
         'Test Comment',
         1
     ))
+
+    # Creating a BookCreate instance for testing without comments
+    test_book.title = 'Test Book2'
+    test_book.genres = 'Test Book2'
+
+    # Check if the test book exists
+    cursor.execute("SELECT * FROM Books WHERE Title = %s", (test_book.title,))
+    book = cursor.fetchone()
+
+    if not book:
+        # Insert a sample book into the database
+        query_create_book = """
+                            INSERT INTO Books (Title, Authors, Synopsis, BuyLink, Genres, Rating, Editorial, Comments, PublicationDate, Image)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """
+        cursor.execute(query_create_book, (
+            test_book.title,
+            test_book.authors,
+            test_book.synopsis,
+            test_book.buy_link,
+            test_book.genres,
+            test_book.rating,
+            test_book.editorial,
+            test_book.comments,
+            test_book.publication_date,
+            test_book.image
+        ))
 

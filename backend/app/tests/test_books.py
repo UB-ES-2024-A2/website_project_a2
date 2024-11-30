@@ -1,6 +1,18 @@
+""" Test suite for book-related endpoints """
 from fastapi.testclient import TestClient
 
 def test_read_top5_matched_books(client: TestClient, db) -> None:
+    """
+    Test case for reading top 5 matched books based on a search keyword.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The response body contains a "data" key with a list of books.
+        - The response contains a "count" key with the total number of books.
+    """
     keyword = "Test Boo"
     response = client.get(f"/api/v1/books/{keyword}")
 
@@ -11,7 +23,7 @@ def test_read_top5_matched_books(client: TestClient, db) -> None:
 
     assert "data" in data
     assert isinstance(data["data"], list)
-    assert len(data["data"]) <= 5 
+    assert len(data["data"]) <= 5
 
     for book in data["data"]:
         assert "id_book" in book
@@ -30,6 +42,17 @@ def test_read_top5_matched_books(client: TestClient, db) -> None:
     assert isinstance(data["count"], int)
 
 def test_filter_books_by_genres(client: TestClient, db) -> None:
+    """
+    Test case for filtering books by genres.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The response body contains "data" and "count" keys.
+        - Each book contains the necessary fields.
+    """
     genres = ["Test Book"]
 
     response = client.post("/api/v1/books/filter-by-genres", json=genres)
@@ -56,12 +79,23 @@ def test_filter_books_by_genres(client: TestClient, db) -> None:
         assert "image" in book
 
     assert isinstance(data["count"], int)
-    assert data["count"] >= len(data["data"]) 
+    assert data["count"] >= len(data["data"])
 
 
 def test_get_book_by_id(client: TestClient, db) -> None:
+    """
+    Test case for getting a book by its ID.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The returned book matches the searched book.
+    """
     # Get the book id
-    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"])
+    book_searched = book_searched.json()["data"][0]
     book_id = book_searched['id_book']
 
     # Get the book by id
@@ -92,6 +126,16 @@ def test_get_book_by_id(client: TestClient, db) -> None:
     assert book['image'] == book_searched['image']
 
 def test_get_book_by_not_found_id(client: TestClient, db) -> None:
+    """
+    Test case for getting a book by a non-existent ID.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The response message is "Book not found with the provided id".
+    """
     # Get the book by id
     response = client.get(f"api/v1/books/book/{-9}")
     book = response.json()
@@ -100,30 +144,121 @@ def test_get_book_by_not_found_id(client: TestClient, db) -> None:
     assert book["detail"] == "Book not found with the provided id"
 
 def test_get_book_by_not_id(client: TestClient, db) -> None:
+    """
+    Test case for getting a book by a non-existent ID.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The response contains an error message for the book not found.
+    """
     # Get the book by id
     response = client.get("api/v1/books/book/h")
     book = response.json()
 
     assert response.status_code == 422
-    assert book["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
+    assert book["detail"][0]['msg'] == ('Input should be a valid integer, '
+                                        'unable to parse string as an integer')
 
-def test_get_books(client: TestClient, db) -> None:
-    # Get all books
-    response = client.get("/api/v1/books")
+def test_get_rating(client: TestClient, db) -> None:
+    """
+    Test case for getting the rating and comments of a book.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The response contains the username, comment, and rating.
+    """
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the rating
+    response = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
 
     assert response.status_code == 200
-    books = response.json()['data']
-    assert len(books) > 0
+    rating = response.json()['comments'][0]
+    assert rating["username"] == "test"
+    assert rating['comment'] == "Test Comment"
+    assert rating['rating'] == 1
 
-def test_get_two_books(client: TestClient, db) -> None:
-    # Get first two books
-    response = client.get("/api/v1/books/?skip=0&limit=2")
+def test_get_rating_not_found_book(client: TestClient, db) -> None:
+    """
+    Test case for getting ratings of a book that doesn't exist.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The response message is "Book not found".
+    """
+    # Get the book id
+    book_id = -1
+
+    # Get the rating
+    response = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
+
+    assert response.status_code == 404
+    message = response.json()
+    assert message["detail"] == "Book not found."
+
+def test_get_rating_book_without_ratin(client: TestClient, db) -> None:
+    """
+    Test case for getting ratings of a book without any ratings or comments.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The response message is "No comments or ratings found for this book".
+    """
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book2"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the rating
+    response = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
 
     assert response.status_code == 200
-    books = response.json()['data']
-    assert len(books) == 2
+    message = response.json()
+    assert message["message"] == "No comments or ratings found for this book."
+
+def test_get_rating_invalid_id(client: TestClient, db) -> None:
+    """
+    Test case for getting ratings with an invalid book ID.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 422.
+        - The error message indicates that the ID is invalid and cannot be parsed.
+    """
+    # Get the rating
+    response = client.get("api/v1/books/CommentRatingPerBook/h")
+
+    assert response.status_code == 422
+    message = response.json()
+    assert message["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
+
 
 def test_post_book_rating(client: TestClient, db) -> None:
+    """
+    Test case for posting a comment and rating for a book.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The response confirms the comment and rating have been added.
+    """
     # Get the book id
     book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
     book_id = book_searched['id_book']
@@ -147,6 +282,16 @@ def test_post_book_rating(client: TestClient, db) -> None:
     assert message['message'] == "Comment and rating successfully added."
 
 def test_post_book_rating_not_found_book(client: TestClient, db) -> None:
+    """
+    Test case for posting a book rating when the book is not found.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The response message is "Book not found".
+    """
     # Get the book id
     book_id = -1
 
@@ -169,6 +314,16 @@ def test_post_book_rating_not_found_book(client: TestClient, db) -> None:
     assert message["detail"] == "Book not found."
 
 def test_post_book_rating_not_found_user(client: TestClient, db) -> None:
+    """
+    Test case for posting a book rating when the user is not found.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The response message is "User not found".
+    """
     # Get the book id
     book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
     book_id = book_searched['id_book']
@@ -190,6 +345,16 @@ def test_post_book_rating_not_found_user(client: TestClient, db) -> None:
     assert message['detail'] == "User not found."
 
 def test_post_book_rating_not_valid_rating(client: TestClient, db) -> None:
+    """
+    Test case for posting a book rating with an invalid rating value.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 400.
+        - The response message indicates that the rating must be between 1 and 5.
+    """
     # Get the book id
     book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
     book_id = book_searched['id_book']
@@ -216,6 +381,16 @@ def test_post_book_rating_not_valid_rating(client: TestClient, db) -> None:
     assert message['detail'] == "Rating must be between 1 and 5."
 
 def test_post_book_rating_not_param(client: TestClient, db) -> None:
+    """
+    Test case for posting a book rating without the required parameters.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 422.
+        - The response message indicates that a field is required.
+    """
     # Get the book id
     book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
     book_id = book_searched['id_book']
@@ -231,8 +406,53 @@ def test_post_book_rating_not_param(client: TestClient, db) -> None:
     message = response.json()
     assert message['detail'][0]['msg'] == 'Field required'
 
+def test_get_books(client: TestClient, db) -> None:
+    """
+    Test case for getting all books.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The returned data contains a list of books with more than 0 items.
+    """
+    # Get all books
+    response = client.get("/api/v1/books")
+
+    assert response.status_code == 200
+    books = response.json()['data']
+    assert len(books) > 0
+
+def test_get_two_books(client: TestClient, db) -> None:
+    """
+    Test case for getting a limited number of books.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The returned data contains exactly 2 books.
+    """
+    # Get first two books
+    response = client.get("/api/v1/books/?skip=0&limit=2")
+
+    assert response.status_code == 200
+    books = response.json()['data']
+    assert len(books) == 2
 
 def test_delete_book_rating(client: TestClient, db) -> None:
+    """
+    Test case for deleting a book rating.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The message confirms that the comment was successfully deleted.
+    """
     # Get the book id
     book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
     book_id = book_searched['id_book']
@@ -249,6 +469,16 @@ def test_delete_book_rating(client: TestClient, db) -> None:
     assert message['message'] == "Comment successfully deleted."
 
 def test_delete_book_rating_not_found_rating(client: TestClient, db) -> None:
+    """
+    Test case for attempting to delete a non-existent book rating.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The message confirms that the comment was not found.
+    """
     # Get the rating id
     rating_id = -1
 
@@ -260,6 +490,16 @@ def test_delete_book_rating_not_found_rating(client: TestClient, db) -> None:
     assert message["detail"] == "Comment not found."
 
 def test_delete_book_rating_not_valid_id(client: TestClient, db) -> None:
+    """
+    Test case for attempting to delete a book rating with an invalid ID.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 422.
+        - The message confirms that the ID is invalid.
+    """
     # Delete comment
     response = client.delete("api/v1/books/CommentRatingPerBook/{h}")
 
