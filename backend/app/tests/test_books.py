@@ -405,3 +405,104 @@ def test_post_book_rating_not_param(client: TestClient, db) -> None:
     assert response.status_code == 422
     message = response.json()
     assert message['detail'][0]['msg'] == 'Field required'
+
+def test_get_books(client: TestClient, db) -> None:
+    """
+    Test case for getting all books.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The returned data contains a list of books with more than 0 items.
+    """
+    # Get all books
+    response = client.get("/api/v1/books")
+
+    assert response.status_code == 200
+    books = response.json()['data']
+    assert len(books) > 0
+
+def test_get_two_books(client: TestClient, db) -> None:
+    """
+    Test case for getting a limited number of books.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The returned data contains exactly 2 books.
+    """
+    # Get first two books
+    response = client.get("/api/v1/books/?skip=0&limit=2")
+
+    assert response.status_code == 200
+    books = response.json()['data']
+    assert len(books) == 2
+
+def test_delete_book_rating(client: TestClient, db) -> None:
+    """
+    Test case for deleting a book rating.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The message confirms that the comment was successfully deleted.
+    """
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the rating id
+    ratings = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
+    rating_id = ratings.json()['comments'][0]['id_comment_rating']
+
+    # Delete comment
+    response = client.delete(f"api/v1/books/CommentRatingPerBook/{rating_id}")
+    message = response.json()
+
+    assert response.status_code == 200
+    assert message['message'] == "Comment successfully deleted."
+
+def test_delete_book_rating_not_found_rating(client: TestClient, db) -> None:
+    """
+    Test case for attempting to delete a non-existent book rating.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 404.
+        - The message confirms that the comment was not found.
+    """
+    # Get the rating id
+    rating_id = -1
+
+    # Delete comment
+    response = client.delete(f"api/v1/books/CommentRatingPerBook/{rating_id}")
+
+    assert response.status_code == 404
+    message = response.json()
+    assert message["detail"] == "Comment not found."
+
+def test_delete_book_rating_not_valid_id(client: TestClient, db) -> None:
+    """
+    Test case for attempting to delete a book rating with an invalid ID.
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 422.
+        - The message confirms that the ID is invalid.
+    """
+    # Delete comment
+    response = client.delete("api/v1/books/CommentRatingPerBook/{h}")
+
+    assert response.status_code == 422
+    message = response.json()
+    assert message["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'

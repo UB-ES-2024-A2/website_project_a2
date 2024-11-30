@@ -129,3 +129,4 @@ def init_db(cursor) -> None:
             test_book.publication_date,
             test_book.image
         ))
+
