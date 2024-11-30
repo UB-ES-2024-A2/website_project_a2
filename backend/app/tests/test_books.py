@@ -230,3 +230,39 @@ def test_post_book_rating_not_param(client: TestClient, db) -> None:
     assert response.status_code == 422
     message = response.json()
     assert message['detail'][0]['msg'] == 'Field required'
+
+
+def test_delete_book_rating(client: TestClient, db) -> None:
+    # Get the book id
+    book_searched = client.post("/api/v1/books/filter-by-genres", json=["Test Book"]).json()["data"][0]
+    book_id = book_searched['id_book']
+
+    # Get the rating id
+    ratings = client.get(f"api/v1/books/CommentRatingPerBook/{book_id}")
+    rating_id = ratings.json()['comments'][0]['id_comment_rating']
+
+    # Delete comment
+    response = client.delete(f"api/v1/books/CommentRatingPerBook/{rating_id}")
+    message = response.json()
+
+    assert response.status_code == 200
+    assert message['message'] == "Comment successfully deleted."
+
+def test_delete_book_rating_not_found_rating(client: TestClient, db) -> None:
+    # Get the rating id
+    rating_id = -1
+
+    # Delete comment
+    response = client.delete(f"api/v1/books/CommentRatingPerBook/{rating_id}")
+
+    assert response.status_code == 404
+    message = response.json()
+    assert message["detail"] == "Comment not found."
+
+def test_delete_book_rating_not_valid_id(client: TestClient, db) -> None:
+    # Delete comment
+    response = client.delete("api/v1/books/CommentRatingPerBook/{h}")
+
+    assert response.status_code == 422
+    message = response.json()
+    assert message["detail"][0]['msg'] == 'Input should be a valid integer, unable to parse string as an integer'
