@@ -29,6 +29,7 @@ def db() -> Generator:
             # Clean up test data
             cursor.execute("DELETE FROM users WHERE email = 'test@test'")
             cursor.execute("DELETE FROM Books WHERE title = 'Test Book'")
+            cursor.execute("DELETE FROM Books WHERE title = 'Test Book2'")
             connection.commit()
 
             # Close the cursor and connection
