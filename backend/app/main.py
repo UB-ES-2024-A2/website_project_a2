@@ -9,6 +9,15 @@ from app.core.config import settings
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
+    """
+    Custom function to generate a unique ID for each route in the FastAPI app.
+
+    Args:
+        route (APIRoute): The route for which to generate a unique ID.
+
+    Returns:
+        str: The unique ID in the format of "<route tag>-<route name>".
+    """
     return f"{route.tags[0]}-{route.name}"
 
 if settings.SENTRY_DSN:
