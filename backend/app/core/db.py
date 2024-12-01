@@ -1,35 +1,132 @@
 """ Database configuration """
-from sqlmodel import Session, create_engine, select
+from datetime import datetime
+import mysql.connector
 
-from app import crud
+from app.models import UserCreate, BookCreate
 from app.core.config import settings
-from app.models import User, UserCreate
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+def get_db_connection():
+    """ Creates a connection to the production database """
+    return mysql.connector.connect(
+        host=settings.HOST,
+        user=settings.USERDB,
+        password=settings.PASSWORD,
+        database=settings.DATABASE,
+        port=3306,
+    )
 
+def init_db(cursor) -> None:
+    """ Initializes the database with a default superuser and a sample book """
 
-# make sure all SQLModel models are imported (app.models) before initializing DB
-# otherwise, SQLModel might fail to initialize relationships properly
-# for more details: https://github.com/tiangolo/full-stack-fastapi-template/issues/28
+    # Create a test user
+    test_user = UserCreate(
+        name="Test",
+        surname="Test",
+        username="test",
+        email="test@test",
+        password="test"
+    )
 
+    # Check if the test user exists
+    cursor.execute("SELECT * FROM users WHERE email = %s", (test_user.email,))
+    existing_user = cursor.fetchone()
 
-def init_db(session: Session) -> None:
-    # Tables should be created with Alembic migrations
-    # But if you don't want to use migrations, create
-    # the tables un-commenting the next lines
-    # from sqlmodel import SQLModel
+    if not existing_user:
+        # Insert user test in the db
+        query_create_user = """
+            INSERT INTO users (name, surname, username, email, password)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+        cursor.execute(query_create_user, (
+            test_user.name,
+            test_user.surname,
+            test_user.username,
+            test_user.email,
+            test_user.password
+        ))
 
-    # from app.core.engine import engine
-    # This works because the models are already imported and registered from app.models
-    # SQLModel.metadata.create_all(engine)
+        user_id = cursor.lastrowid
+    else:
+        user_id = existing_user[0]
 
-    user = session.exec(
-        select(User).where(User.email == settings.FIRST_SUPERUSER)
-    ).first()
-    if not user:
-        user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            is_superuser=True,
-        )
-        user = crud.user.create_user(session=session, user_create=user_in)
+    # Creating a BookCreate instance for testing
+    test_book = BookCreate(
+        title="Test Book",
+        authors="Test Book",
+        synopsis="Test Book",
+        buy_link="Test Book",
+        genres="Test Book",
+        rating=0.0,
+        editorial="Test Book",
+        comments="Test Book",
+        publication_date=datetime.now().isoformat(),
+        image="test"
+    )
+
+    # Check if the test book exists
+    cursor.execute("SELECT * FROM Books WHERE Title = %s", (test_book.title,))
+    book = cursor.fetchone()
+
+    if not book:
+        # Insert a sample book into the database
+        query_create_book = """
+                        INSERT INTO Books (Title, Authors, Synopsis, BuyLink, Genres, Rating, Editorial, Comments, PublicationDate, Image)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """
+        cursor.execute(query_create_book, (
+            test_book.title,
+            test_book.authors,
+            test_book.synopsis,
+            test_book.buy_link,
+            test_book.genres,
+            test_book.rating,
+            test_book.editorial,
+            test_book.comments,
+            test_book.publication_date,
+            test_book.image
+        ))
+
+        book_id = cursor.lastrowid
+    else:
+        book_id = book[0]
+
+    # Insert a sample rating into the database
+    query_create_rating ="""
+        INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
+        VALUES (%s, %s, %s, %s)
+    """
+
+    cursor.execute(query_create_rating, (
+        user_id,
+        book_id,
+        'Test Comment',
+        1
+    ))
+
+    # Creating a BookCreate instance for testing without comments
+    test_book.title = 'Test Book2'
+    test_book.genres = 'Test Book2'
+
+    # Check if the test book exists
+    cursor.execute("SELECT * FROM Books WHERE Title = %s", (test_book.title,))
+    book = cursor.fetchone()
+
+    if not book:
+        # Insert a sample book into the database
+        query_create_book = """
+                            INSERT INTO Books (Title, Authors, Synopsis, BuyLink, Genres, Rating, Editorial, Comments, PublicationDate, Image)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """
+        cursor.execute(query_create_book, (
+            test_book.title,
+            test_book.authors,
+            test_book.synopsis,
+            test_book.buy_link,
+            test_book.genres,
+            test_book.rating,
+            test_book.editorial,
+            test_book.comments,
+            test_book.publication_date,
+            test_book.image
+        ))
+

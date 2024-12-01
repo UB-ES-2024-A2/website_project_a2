@@ -192,9 +192,9 @@ export default {
         this.clearRoute()
       }
     },
-    setPageSearch () {
+    setPageSearch (datos) {
       if (this.actualPage !== PageEnum.SEARCH) {
-        this.$emit('search-selected', [this.textInput, this.type])
+        this.$emit('search-selected', [datos, this.type])
       }
     },
     setCategory (categorySearch) {
@@ -284,10 +284,12 @@ export default {
       this.filteredSuggestionsUsers = []
       this.filteredSuggestionsBooks = []
 
+      let datos = null
+
       if (this.type === 'book') {
         BookService.readBookById(this.id).then(response => {
-          const book = response.data
-          if (book.title !== this.textInput) {
+          datos = response.data
+          if (datos.title !== this.textInput) {
             this.$router.push('/not-found')
           }
         }).catch(error => {
@@ -296,8 +298,8 @@ export default {
         })
       } else if (this.type === 'user') {
         UserService.readUserById(this.id).then(response => {
-          const user = response.data
-          if (user.name + ' ' + user.surname !== this.textInput) {
+          datos = response.data
+          if (datos.name + ' ' + datos.surname !== this.textInput) {
             this.$router.push('/not-found')
           }
         }).catch(error => {
@@ -307,7 +309,7 @@ export default {
       }
 
       if (this.textInput.trim() !== '') {
-        this.setPageSearch()
+        this.setPageSearch(datos)
       }
     },
     hasSpecialCharacters (input) {
