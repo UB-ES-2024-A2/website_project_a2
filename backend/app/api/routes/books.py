@@ -5,6 +5,7 @@ import mysql.connector
 from app.models import BookCreate, BookOut, BooksOut, BookUpdate
 
 from app.api.deps import SessionDep
+from app import crud
 
 router = APIRouter()
 
@@ -15,42 +16,7 @@ def filter_books_by_genres(session: SessionDep, genres: list[str]) -> Any:
     """
     try:
         cursor = session.cursor()
-
-        # Crear la consulta dinámica para los géneros
-        query_books = f"""
-            SELECT IdBook as id_book, Title as title, Authors as authors, Synopsis as synopsis, BuyLink as buy_link, 
-            Genres as genres, Rating as rating, Editorial as editorial, Comments as comments, PublicationDate as publication_date, Image as image
-            FROM Books
-            WHERE Genres IN ({', '.join(['%s'] * len(genres))})
-        """
-
-        # Ejecutar la consulta con los géneros proporcionados
-        cursor.execute(query_books, tuple(genres))
-        filas = cursor.fetchall()
-
-        # Contar el total de libros
-        query_count = "SELECT COUNT(1) FROM Books WHERE Genres IN ({})".format(', '.join(['%s'] * len(genres)))
-        cursor.execute(query_count, tuple(genres))
-        count = cursor.fetchone()[0]
-
-        # Transformar las filas obtenidas en una lista de objetos BookOut
-        books_data = [
-            BookOut(
-                id_book=row[0],
-                title=row[1],
-                authors=row[2],
-                synopsis=row[3],
-                buy_link=row[4],
-                genres=row[5],
-                rating=row[6],
-                editorial=row[7],
-                comments=row[8],
-                publication_date=row[9].isoformat() if row[9] else None,  # Convertir a string
-                image=row[10]
-            ) for row in filas
-        ]
-
-        return BooksOut(data=books_data, count=count)
+        return crud.book.get_books_by_genres(cursor=cursor, genres=genres)
 
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
@@ -66,48 +32,7 @@ def read_top5_matched_books(session: SessionDep, keyword: str) -> Any:
     try:
         cursor = session.cursor()
 
-        # Crear la consulta de búsqueda
-        query = """
-               SELECT IdBook, Title, Authors, Synopsis, BuyLink, Genres, Rating, Editorial, Comments, PublicationDate, Image
-               FROM Books
-               WHERE Title LIKE %s OR Authors LIKE %s
-               ORDER BY Rating DESC
-               LIMIT 5
-           """
-
-        # Preparar el parámetro de búsqueda con el carácter comodín
-        search_param = f"%{keyword}%"
-
-        # Ejecutar la consulta
-        cursor.execute(query, (search_param, search_param))
-
-        # Obtener los resultados
-        resultados = cursor.fetchall()
-
-        # Contar el total de libros
-        query_count = "SELECT COUNT(1) FROM Books"
-        cursor.execute(query_count)
-        count = cursor.fetchone()[0]
-
-        books_data = [
-            BookOut(
-                id_book=row[0],
-                title=row[1],
-                authors=row[2],
-                synopsis=row[3],
-                buy_link=row[4],
-                genres=row[5],
-                rating=row[6],
-                editorial=row[7],
-                comments=row[8],
-                publication_date=row[9].isoformat() if row[9] else None,  # Convertir a string
-                image=row[10]
-            ) for row in resultados
-        ]
-
-        return BooksOut(data=books_data, count=count)
-
-
+        return crud.book.get_books_by_key(cursor=cursor, keyword=keyword)
 
     except mysql.connector.Error as err:
         print(f"Error al conectar a MySQL: {err}")
@@ -126,38 +51,7 @@ def read_books(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     try:
         cursor = session.cursor()
 
-        # Consulta para obtener los libros con paginación
-        query_books = """
-            SELECT IdBook as id_book, Title as title, Authors as authors, Synopsis as synopsis, BuyLink as buy_link, 
-            Genres as genres, Rating as rating, Editorial as editorial, Comments as comments, PublicationDate as publication_date, Image as image from Books
-            LIMIT %s OFFSET %s;
-        """
-        cursor.execute(query_books, (limit, skip))
-        # cursor.execute(query_books)
-        filas = cursor.fetchall()
-
-        # Contar el total de libros
-        query_count = "SELECT COUNT(1) FROM Books"
-        cursor.execute(query_count)
-        count = cursor.fetchone()[0]
-        # Transformar las filas obtenidas en una lista de objetos BookOut
-        books_data = [
-            BookOut(
-                id_book=row[0],
-                title=row[1],
-                authors=row[2],
-                synopsis=row[3],
-                buy_link=row[4],
-                genres=row[5],
-                rating=row[6],
-                editorial=row[7],
-                comments=row[8],
-                publication_date=row[9].isoformat() if row[9] else None,  # Convertir a string
-                image=row[10]
-            ) for row in filas
-        ]
-
-        return BooksOut(data=books_data, count=count)
+        return crud.book.get_all_books(cursor=cursor, skip=skip, limit=limit)
 
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
@@ -176,34 +70,12 @@ def read_book(session: SessionDep, book_id: int) -> Any:
     try:
         cursor = session.cursor()
 
-        # Consulta para obtener un libro por su ID
-        query_book = """
-            SELECT IdBook as id_book, Title as title, Authors as authors, Synopsis as synopsis, BuyLink as buy_link, 
-            Genres as genres, Rating as rating, Editorial as editorial, Comments as comments, PublicationDate as publication_date, Image as image from Books
-            WHERE IdBook = %s
-        """
-        cursor.execute(query_book, (book_id,))
-        row = cursor.fetchone()
+        row = crud.book.get_book_by_id(cursor=cursor, book_id=book_id)
 
         if not row:
             raise HTTPException(status_code=404, detail="Book not found with the provided id")
 
-        # Transformar la fila obtenida en un objeto BookOut
-        book_out = BookOut(
-            id_book=row[0],
-            title=row[1],
-            authors=row[2],
-            synopsis=row[3],
-            buy_link=row[4],
-            genres=row[5],
-            rating=row[6],
-            editorial=row[7],
-            comments=row[8],
-            publication_date=row[9].isoformat() if row[9] else None,  # Convertir a string
-            image=row[10]
-        )
-
-        return book_out
+        return row
 
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
@@ -229,30 +101,15 @@ def create_comment_rating(
             raise HTTPException(status_code=400, detail="Rating must be between 1 and 5.")
 
         # Verificar que el libro existe
-        query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
-        cursor.execute(query_check_book, (id,))
-        if not cursor.fetchone():
+        if not crud.book.get_book_by_id(cursor=cursor, book_id=id):
             raise HTTPException(status_code=404, detail="Book not found.")
 
         # Verificar que el usuario existe
-        query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
-        cursor.execute(query_check_user, (user_id,))
-        if not cursor.fetchone():
+        if not crud.user.get_user_by_id(cursor=cursor, user_id=user_id):
             raise HTTPException(status_code=404, detail="User not found.")
 
         # Insertar comentario y calificación
-        query_insert = """
-                INSERT INTO CommentRatingPerBook (IdUser, IdBook, Comment, Rating)
-                VALUES (%s, %s, %s, %s)
-            """
-        cursor.execute(query_insert, (user_id, id, comment, rating))
-
-        query_avg_rating = "SELECT AVG(Rating) FROM CommentRatingPerBook WHERE IdBook = %s"
-        cursor.execute(query_avg_rating, (id,))
-        avg_rating = cursor.fetchone()[0]
-
-        query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
-        cursor.execute(query_update_book, (avg_rating, id))
+        crud.rating.create_rating(cursor=cursor, id=id, user_id=user_id, comment=comment, rating=rating)
         session.commit()
 
         return {"message": "Comment and rating successfully added."}
@@ -273,20 +130,11 @@ def get_comments_ratings(
         cursor = session.cursor()
 
         # Verificar que el libro existe
-        query_check_book = "SELECT IdBook FROM Books WHERE IdBook = %s"
-        cursor.execute(query_check_book, (idBook,))
-        if not cursor.fetchone():
+        if not crud.book.get_book_by_id(cursor=cursor, book_id=idBook):
             raise HTTPException(status_code=404, detail="Book not found.")
 
         # Obtener los comentarios y calificaciones del libro
-        query_get_comments = """
-            SELECT crp.IdCommentRating, crp.IdUser, crp.Comment, crp.Rating, u.username
-            FROM CommentRatingPerBook crp
-            JOIN users u ON crp.IdUser = u.id_user
-            WHERE crp.IdBook = %s
-        """
-        cursor.execute(query_get_comments, (idBook,))
-        rows = cursor.fetchall()
+        rows = crud.rating.get_ratings(cursor=cursor, book_id=idBook)
 
         if not rows:
             return {"message": "No comments or ratings found for this book."}
@@ -322,53 +170,19 @@ def create_book(session: SessionDep, book_in: BookCreate) -> Any:
         cursor = session.cursor()
 
         # Verificar si el libro ya existe por título
-        query_check_book = "SELECT Title FROM Books WHERE title = %s"
-        cursor.execute(query_check_book, (book_in.title,))
-        existing_book = cursor.fetchone()
+        existing_book = crud.book.get_book_by_title(cursor=cursor, book_title=book_in.title)
 
         if existing_book:
             raise HTTPException(
                 status_code=400,
                 detail="The book with this title already exists in the system."
             )
-        # Insertar el nuevo libro en la base de datos
-        query_create_book = """
-            INSERT INTO Books (Title, Authors, Synopsis, BuyLink, Genres, Rating, Editorial, Comments, PublicationDate, Image)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(query_create_book, (
-            book_in.title,
-            book_in.authors,
-            book_in.synopsis,
-            book_in.buy_link,
-            book_in.genres,
-            book_in.rating,
-            book_in.editorial,
-            book_in.comments,
-            book_in.publication_date,
-            book_in.image
-        ))
+
+        book_out = crud.book.create_book(cursor=cursor, book_in=book_in)
 
         # Confirmar la transacción
         session.commit()
 
-        # Obtener el ID del libro recién creado
-        new_book_id = cursor.lastrowid
-
-        # Crear el objeto de salida BookOut
-        book_out = BookOut(
-            id_book=new_book_id,
-            title=book_in.title,
-            authors=book_in.authors,
-            synopsis=book_in.synopsis,
-            buy_link=book_in.buy_link,
-            genres=book_in.genres,
-            rating=book_in.rating,
-            editorial=book_in.editorial,
-            comments=book_in.comments,
-            publication_date=book_in.publication_date.isoformat() if book_in.publication_date else None,
-            image=book_in.image
-        )
 
         return book_out
 
@@ -390,9 +204,7 @@ def update_book(session: SessionDep, book_id: int, book_in: BookUpdate) -> Any:
         cursor = session.cursor()
 
         # Verificar si el libro existe por su ID
-        query_check_book = "SELECT IdBook as id_book FROM books WHERE IdBook = %s"
-        cursor.execute(query_check_book, (book_id,))
-        existing_book = cursor.fetchone()
+        existing_book = crud.book.get_book_by_id(cursor=cursor, book_id=book_id)
 
         if not existing_book:
             raise HTTPException(
@@ -401,48 +213,10 @@ def update_book(session: SessionDep, book_id: int, book_in: BookUpdate) -> Any:
             )
 
         # Actualizar el libro
-        query_update_book = """
-            UPDATE books SET Title = %s, Authors = %s, Synopsis = %s, BuyLink = %s, Genres = %s, Rating = %s,
-            Editorial = %s, Comments = %s, PublicationDate = %s, Image = %s
-            WHERE IdBook = %s
-        """
-        cursor.execute(query_update_book, (
-            book_in.title,
-            book_in.authors,
-            book_in.synopsis,
-            book_in.buy_link,
-            book_in.genres,
-            book_in.rating,
-            book_in.editorial,
-            book_in.comments,
-            book_in.publication_date,
-            book_in.image,
-            book_id
-        ))
+        updated_book_out = crud.book.update_book(cursor=cursor, book_id=book_id, book_in=book_in)
 
         # Confirmar la transacción
         session.commit()
-
-        # Obtener los datos actualizados
-        query_updated_book = """SELECT IdBook as id_book, Title as title, Authors as authors, Synopsis as synopsis, BuyLink as buy_link, 
-            Genres as genres, Rating as rating, Editorial as editorial, Comments as comments, PublicationDate as publication_date, Image as image from Books WHERE IdBook = %s"""
-        cursor.execute(query_updated_book, (book_id,))
-        row = cursor.fetchone()
-
-        # Crear el objeto de salida BookOut con los datos actualizados
-        updated_book_out = BookOut(
-            id_book=row[0],
-            title=row[1],
-            authors=row[2],
-            synopsis=row[3],
-            buy_link=row[4],
-            genres=row[5],
-            rating=row[6],
-            editorial=row[7],
-            comments=row[8],
-            publication_date=row[9].isoformat() if row[9] else None,  # Convertir a string
-            image=row[10]
-        )
 
         return updated_book_out
 
@@ -464,9 +238,7 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
         cursor = session.cursor()
 
         # Verificar si el libro existe
-        query_check_book = "SELECT IdBooks FROM Books WHERE IdBook = %s"
-        cursor.execute(query_check_book, (book_id,))
-        existing_book = cursor.fetchone()
+        existing_book = crud.book.get_book_by_id(cursor=cursor, book_id=book_id)
 
         if not existing_book:
             raise HTTPException(
@@ -475,8 +247,7 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
             )
 
         # Eliminar el libro
-        query_delete_book = "DELETE FROM Books WHERE IdBook = %s"
-        cursor.execute(query_delete_book, (book_id,))
+        crud.book.delete_book(cursor=cursor, book_id=book_id)
 
         # Confirmar la transacción
         session.commit()
@@ -493,13 +264,14 @@ def delete_book(session: SessionDep, book_id: int) -> Any:
 
 @router.delete("/CommentRatingPerBook/{comment_id}")
 def delete_comment(session: SessionDep, comment_id: int):
+    """
+    Delete a rating book by its ID.
+    """
     try:
         cursor = session.cursor()
 
         # Verificar que el comentario existe
-        query_check_comment = "SELECT IdBook FROM CommentRatingPerBook WHERE IdCommentRating = %s"
-        cursor.execute(query_check_comment, (comment_id,))
-        result = cursor.fetchone()
+        result = crud.rating.get_rating_by_id(cursor=cursor, comment_id=comment_id)
         if not result:
             raise HTTPException(status_code=404, detail="Comment not found.")
 
@@ -507,17 +279,14 @@ def delete_comment(session: SessionDep, comment_id: int):
         id_book = result[0]
 
         # Eliminar el comentario
-        query_delete = "DELETE FROM CommentRatingPerBook WHERE IdCommentRating = %s"
-        cursor.execute(query_delete, (comment_id,))
+        crud.rating.delete_rating(cursor=cursor, comment_id=comment_id)
 
         # Recalcular el promedio de calificación
-        query_avg_rating = "SELECT AVG(Rating) FROM CommentRatingPerBook WHERE IdBook = %s"
-        cursor.execute(query_avg_rating, (id_book,))
-        avg_rating = cursor.fetchone()[0] or 0  # Si no hay calificaciones, promedio es 0
+        crud.rating.calculate_rating(cursor=cursor, book_id=id_book)
 
         # Actualizar el promedio en la tabla de libros
-        query_update_book = "UPDATE Books SET Rating = %s WHERE IdBook = %s"
-        cursor.execute(query_update_book, (avg_rating, id_book))
+        avg_rating = cursor.fetchone()[0] or 0
+        crud.book.update_avg(cursor=cursor, id_book=id_book, avg_rating=avg_rating)
 
         session.commit()
         return {"message": "Comment successfully deleted."}
