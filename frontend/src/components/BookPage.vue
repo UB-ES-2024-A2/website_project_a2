@@ -34,6 +34,37 @@
             <a :href="book.buy_link" target="_blank" rel="noopener noreferrer" class="buy-button">Buy Now</a>
           </div>
         </div>
+
+        <!-- Updated Comments section -->
+        <div class="comments-section">
+          <h2>Reader Reviews</h2>
+          <div v-if="loadingComments" class="loading">
+            <div class="spinner"></div>
+            <p>Loading comments...</p>
+          </div>
+          <div v-else-if="commentsError" class="error">
+            <p>{{ commentsError }}</p>
+          </div>
+          <div v-else-if="comments && comments.length > 0" class="comments-list">
+            <div v-for="comment in comments" :key="comment.id_comment_rating" class="comment-card">
+              <div class="comment-header">
+                <div class="user-info">
+                  <img src="@/assets/user-black.svg" alt="User avatar" class="user-avatar">
+                  <span class="username">{{ comment.username }}</span>
+                </div>
+                <div class="rating">
+                  <span class="stars">
+                    <span v-for="i in 5" :key="i" :class="{'star-filled': i <= comment.rating, 'star-empty': i > comment.rating}">★</span>
+                  </span>
+                </div>
+              </div>
+              <p class="comment-text">{{ comment.comment }}</p>
+            </div>
+          </div>
+          <div v-else class="no-comments">
+            No reviews yet. Be the first to review this book!
+          </div>
+        </div>
       </div>
       <div v-else class="no-data">No book data available</div>
     </div>
@@ -54,7 +85,10 @@ export default {
       type: '',
       book: null,
       loading: false,
-      error: null
+      error: null,
+      comments: [],
+      loadingComments: false,
+      commentsError: null
     }
   },
   props: {
@@ -71,6 +105,7 @@ export default {
           this.type = type
           if (type === 'book' && id) {
             this.fetchBook(id)
+            this.fetchComments(id)
           }
         }
       },
@@ -90,6 +125,20 @@ export default {
           console.error('Error fetching book:', error)
           this.error = 'Failed to load book data'
           this.loading = false
+        })
+    },
+    fetchComments (id) {
+      this.loadingComments = true
+      this.commentsError = null
+      BookService.getCommentsRatings(id)
+        .then(response => {
+          this.comments = response.data.comments
+          this.loadingComments = false
+        })
+        .catch(error => {
+          console.error('Error fetching comments:', error)
+          this.commentsError = 'Failed to load comments'
+          this.loadingComments = false
         })
     },
     formatDate (dateString) {
@@ -245,6 +294,71 @@ h2 {
   color: var(--purple-background);
 }
 
+/* Updated styles for comments section */
+.comments-section {
+  margin-top: calc(var(--panel-gap) * 8);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  width: 50%;
+  margin: 0 auto;
+}
+
+.comment-card {
+  background-color: var(--half-transparent-background);
+  border-radius: var(--border-radius);
+  padding: calc(var(--panel-gap) * 1.25);
+  margin-bottom: calc(var(--panel-gap) / 2);
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(var(--panel-gap) / 2);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--panel-gap) / 2);
+}
+
+.user-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+}
+
+.username {
+  font-weight: bold;
+  color: var(--text-color);
+  margin-right: calc(var(--panel-gap) / 2);
+}
+
+.stars {
+  display: inline-flex;
+  align-items: center;
+}
+
+.comment-text {
+  color: var(--text-color);
+  line-height: 1.3;
+  margin-top: calc(var(--panel-gap) / 2);
+  font-size: var(--font-size-xs);
+}
+
+.no-comments {
+  text-align: center;
+  color: var(--text-color-secundary);
+  padding: calc(var(--panel-gap) * 2);
+  background-color: var(--half-transparent-background);
+  border-radius: var(--border-radius);
+}
+
 @media (max-width: 768px) {
   .book-header {
     flex-direction: column;
@@ -258,6 +372,13 @@ h2 {
 
   .buy-button {
     align-self: center;
+  }
+  .comment-header {
+    flex-direction: row;
+    align-items: center;
+  }
+  .comments-list {
+    width: 100%; /* Ancho completo en dispositivos móviles */
   }
 }
 </style>

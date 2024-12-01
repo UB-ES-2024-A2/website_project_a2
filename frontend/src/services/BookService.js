@@ -73,6 +73,43 @@ class BookService {
         return Promise.reject(error)
       })
   }
+  createCommentRating (bookId, userId, comment, rating) {
+    const config = {
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }
+
+    const path = `/api/v1/books/${bookId}/comments`
+    const data = { user_id: userId, comment, rating }
+
+    return http.post(path, data, config)
+      .then((res) => {
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
+
+  getCommentsRatings (bookId) {
+    const config = {
+      headers: {
+        'accept': 'application/json'
+      }
+    }
+
+    const path = `/api/v1/books/CommentRatingPerBook/${bookId}`
+
+    return http.get(path, config)
+      .then((res) => {
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
 }
 
 export default new BookService()
