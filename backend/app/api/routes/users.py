@@ -13,48 +13,21 @@ from app.models import (
     UsersOut,
     UserUpdate
 )
+from app import crud
 
 router = APIRouter()
 
 @router.get("/{keyword}", response_model=UsersOut)
 def read_top5_matched_users(session: SessionDep, keyword: str) -> Any:
+    """
+    Retrieve matched users by the keyword.
+    """
     try:
         # Conexión a la base de datos
         cursor = session.cursor()
 
-        # Crear la consulta de búsqueda
-        query = """
-            SELECT id_user, name, surname, username, email
-               FROM users
-               WHERE name LIKE %s OR surname LIKE %s or username LIKE %s
-               LIMIT 5;
-        """
+        return crud.user.read_top5_matched_users(cursor=cursor, keyword=keyword)
 
-        # Preparar el parámetro de búsqueda con el carácter comodín
-        search_param = f"%{keyword}%"
-
-        # Ejecutar la consulta
-        cursor.execute(query, (search_param, search_param, search_param))
-
-        # Obtener los resultados
-        resultados = cursor.fetchall()
-
-        # Contar el total de libros
-        query_count = "SELECT COUNT(1) FROM Books"
-        cursor.execute(query_count)
-        count = cursor.fetchone()[0]
-
-        users_data = [
-            UserOut(
-                id_user=row[0],
-                name=row[1],
-                surname=row[2],
-                username=row[3],
-                email=row[4]
-            ) for row in resultados
-        ]
-
-        return UsersOut(data=users_data, count=count)
     except mysql.connector.Error as err:
         print(f"Error al conectar a MySQL: {err}")
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
@@ -71,13 +44,7 @@ def read_user(session: SessionDep, user_id: int) -> Any:
     try:
         cursor = session.cursor()
 
-        query_user = """
-            SELECT id_user, name, surname, username, email 
-            FROM users 
-            WHERE id_user = %s
-        """
-        cursor.execute(query_user, (user_id,))
-        row = cursor.fetchone()
+        row = crud.user.get_user_by_id(cursor=cursor, user_id=user_id)
 
         if row is None:
             raise HTTPException(
@@ -109,14 +76,7 @@ def read_user_by_email(session: SessionDep, user_mail: str) -> Any:
     try:
         cursor = session.cursor()
 
-        # Query for getting the user by email
-        query_user = """
-        SELECT id_user, name, surname, username, email
-        FROM users 
-        WHERE email = %s
-        """
-        cursor.execute(query_user, (user_mail,))
-        user_row = cursor.fetchone()
+        user_row = crud.user.get_user_by_email(cursor=cursor, email=user_mail)
 
         if not user_row:
             raise HTTPException(
@@ -153,28 +113,7 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     try:
         cursor = session.cursor()
 
-        # Update query to fetch users
-        query_users = "SELECT id_user, name, surname, username, email FROM users LIMIT %s OFFSET %s"
-        cursor.execute(query_users, (limit, skip))
-        filas = cursor.fetchall()
-
-        # Count the total number of users
-        query_count = "SELECT COUNT(1) FROM users"
-        cursor.execute(query_count)
-        count = cursor.fetchone()[0]
-
-        # Transform tuples to a list of UserOut
-        users_data = [
-            UserOut(
-                id_user=row[0],
-                name=row[1],
-                surname=row[2],
-                username=row[3],
-                email=row[4]
-            ) for row in filas
-        ]
-
-        return UsersOut(data=users_data, count=count)
+        return crud.user.read_users(cursor=cursor, skip=skip, limit=limit)
 
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
@@ -189,13 +128,14 @@ def update_user_fields(
     user_id: int,
     user_in: UserUpdate,
 ) -> Any:
+    """
+    Update user fields.
+    """
     try:
         cursor = session.cursor()
 
         # Verificar si el usuario existe
-        query_check_user = "SELECT id_user FROM users WHERE id_user = %s"
-        cursor.execute(query_check_user, (user_id,))
-        existing_user = cursor.fetchone()
+        existing_user = crud.user.get_user_by_id(cursor=cursor, user_id=user_id)
 
         if not existing_user:
             raise HTTPException(
@@ -203,25 +143,7 @@ def update_user_fields(
                 detail="User not found with the provided ID",
             )
 
-        update_fields = []
-        update_values = []
-
-        if user_in.name is not None:
-            update_fields.append("name = %s")
-            update_values.append(user_in.name)
-        if user_in.surname is not None:
-            update_fields.append("surname = %s")
-            update_values.append(user_in.surname)
-        if user_in.username is not None:
-            update_fields.append("username = %s")
-            update_values.append(user_in.username)
-        if user_in.email is not None:
-            update_fields.append("email = %s")
-            update_values.append(user_in.email)
-        if user_in.password is not None:
-            hashed_password = bcrypt.hashpw(user_in.password.encode('utf-8'), bcrypt.gensalt())
-            update_fields.append("password = %s")
-            update_values.append(hashed_password)
+        update_fields = crud.user.update_user(cursor=cursor, user_id=user_id, user_in=user_in)
 
         if not update_fields:
             raise HTTPException(
@@ -229,14 +151,6 @@ def update_user_fields(
                 detail="No fields provided for update",
             )
 
-        # Crear la consulta dinámica
-        query_update_user = f"""
-            UPDATE users
-            SET {', '.join(update_fields)}
-            WHERE id_user = %s
-        """
-        update_values.append(user_id)
-        cursor.execute(query_update_user, tuple(update_values))
         session.commit()
 
         return {"message": "User updated successfully"}
@@ -264,30 +178,15 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
         cursor = session.cursor()
 
         # Verificar si el usuario ya existe por email
-        query_check_user = "SELECT id_user FROM users WHERE email = %s"
-        cursor.execute(query_check_user, (user_in.email,))
-        existing_user = cursor.fetchone()
+        existing_user = crud.user.create_user(cursor=cursor, email=user_in.email)
 
         if existing_user:
-            print("El usuario ya existe")
             raise HTTPException(
                 status_code=400,
                 detail="The user with this email already exists in the system.",
             )
 
-        # Insertar el nuevo usuario en la base de datos
-        query_create_user = """
-            INSERT INTO users (name, surname, username, email, password)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        hashed_password = bcrypt.hashpw(user_in.password.encode('utf-8'), bcrypt.gensalt())
-        cursor.execute(query_create_user, (
-            user_in.name,
-            user_in.surname,
-            user_in.username,
-            user_in.email,
-            hashed_password
-        ))
+        crud.user.create_user(cursor=cursor, user_in=user_in)
 
         # Confirmar la transacción
         session.commit()
