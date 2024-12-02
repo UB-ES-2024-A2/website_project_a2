@@ -29,7 +29,7 @@ database = settings.DATABASE
 
 
 @router.post("/login", response_model=Token)
-def login_user(*, email: str, pswd_input: str,response: Response) -> Any:
+def login_user(*, email: str, pswd_input: str) -> Any:
     """
     Login a user by email and password.
     """
