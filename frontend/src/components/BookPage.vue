@@ -178,25 +178,40 @@ export default {
       UserService.readUserByEmail(email)
         .then(response => {
           const userId = response.data.id_user
-          return BookService.createCommentRating(this.book.id_book, userId, this.newReview.comment, this.newReview.rating)
+          // Primero, verificamos si el usuario ya ha comentado
+          return BookService.getCommentsRatings(this.book.id_book)
+            .then(commentsResponse => {
+              const comments = commentsResponse.data.comments || []
+              const userHasCommented = comments.some(
+                comment => comment.user_id === userId
+              )
+              if (userHasCommented) {
+                throw new Error('You have already submitted a review for this book.')
+              }
+              // Si el usuario no ha comentado, procedemos a crear el comentario
+              return BookService.createCommentRating(
+                this.book.id_book,
+                userId,
+                this.newReview.comment,
+                this.newReview.rating
+              )
+            })
         })
         .then(() => {
           this.showReviewForm = false
-          this.newReview = { rating: 0, comment: '' }
+          this.newReview = {rating: 0, comment: ''}
           this.fetchComments(this.book.id_book)
           this.fetchBook(this.book.id_book)
         })
         .catch(error => {
           console.error('Error submitting review:', error)
-          if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
+          if (error.message === 'You have already submitted a review for this book.') {
+            this.reviewError = error.message
+          } else if (error.response) {
             this.reviewError = `Error ${error.response.status}: ${error.response.data.detail || 'Could not submit review'}`
           } else if (error.request) {
-            // The request was made but no response was received
             this.reviewError = 'Did not get a response from the server. Please try again.'
           } else {
-            // Something happened in setting up the request that triggered an Error
             this.reviewError = 'Error submitting review. Please try again later.'
           }
         })
@@ -247,8 +262,12 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .book-content {
@@ -256,8 +275,12 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .book-header {
@@ -367,6 +390,7 @@ h2 {
   border-radius: var(--border-radius);
   padding: calc(var(--panel-gap) * 1.25);
   margin-bottom: calc(var(--panel-gap) / 2);
+  margin-top: calc(var(--panel-gap) / 2);
 }
 
 .comment-header {
@@ -515,13 +539,16 @@ h2 {
   .buy-button {
     align-self: center;
   }
+
   .comment-header {
     flex-direction: row;
     align-items: center;
   }
+
   .comments-list {
     width: 100%;
   }
+
   .review-form {
     width: 100%;
   }
