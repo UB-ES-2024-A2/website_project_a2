@@ -80,9 +80,9 @@ export default {
     }
   },
   mounted () {
-    const username = this.$store.getters.username
+    const token = this.$store.getters.token
 
-    if (username) {
+    if (token) {
       this.$router.push('/')
     }
   },
@@ -117,7 +117,7 @@ export default {
       if (this.validateInputs()) {
         AuthService.login(this.username, this.password)
           .then(response => {
-            this.$store.dispatch('setUser', { username: this.username })
+            this.$store.dispatch('setToken', { token: response.data.access_token })
             this.$router.push({ name: 'HomePage' })
           })
           .catch(error => {

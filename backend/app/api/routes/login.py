@@ -28,8 +28,8 @@ password = settings.PASSWORD
 database = settings.DATABASE
 
 
-@router.post("/login", response_model=UserOut)
-def login_user(*, email: str, pswd_input: str) -> Any:
+@router.post("/login", response_model=Token)
+def login_user(*, email: str, pswd_input: str,response: Response) -> Any:
     """
     Login a user by email and password.
     """
@@ -68,18 +68,13 @@ def login_user(*, email: str, pswd_input: str) -> Any:
                     detail="Incorrect password.",
                 )
 
-            # Crear el objeto UserOut basado en los datos obtenidos si la contraseña es correcta
-            user_out = UserOut(
-                id_user=user_row[0],  # id_user
-                name=user_row[1],  # name
-                surname=user_row[2],  # surname
-                username=user_row[3],  # username
-                email=user_row[4]  # email
-            )
-
             print("Inicio de sesión exitoso")
-            return user_out
-
+            access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            return Token(
+                access_token=security.create_access_token(
+                    user_row[0], expires_delta=access_token_expires
+                )
+            )
     except mysql.connector.Error as e:
         print(f"Error al conectar a MySQL: {e}")
         raise HTTPException(status_code=500, detail="Error connecting to the database.")
