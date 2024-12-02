@@ -77,7 +77,7 @@
         </div>
     </div>
 
-      <div class="right-wrap" v-if="username !== ''">
+      <div class="right-wrap" v-if="token !== ''">
           <div class="tooltip-container">
             <span class="tooltip-text">Help</span>
             <div class="btn help-icon">
@@ -172,8 +172,8 @@ export default {
     }
   },
   computed: {
-    username () {
-      return this.$store.getters.username
+    token () {
+      return this.$store.getters.token
     },
     getShowSuggestions () {
       return this.showSuggestions
