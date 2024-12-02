@@ -15,7 +15,7 @@ def get_db_connection():
         port=3306,
     )
 
-def init_db(cursor) -> None:
+def init_db(cursor):
     """ Initializes the database with a default superuser and a sample book """
 
     # Create a test user
@@ -103,6 +103,8 @@ def init_db(cursor) -> None:
         1
     ))
 
+    comment_id = cursor.lastrowid
+
     # Creating a BookCreate instance for testing without comments
     test_book.title = 'Test Book2'
     test_book.genres = 'Test Book2'
@@ -129,4 +131,10 @@ def init_db(cursor) -> None:
             test_book.publication_date,
             test_book.image
         ))
+
+        second_book_id = cursor.lastrowid
+    else:
+        second_book_id = book[0]
+
+    return user_id, book_id, second_book_id, comment_id
 
