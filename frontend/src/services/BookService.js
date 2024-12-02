@@ -95,17 +95,16 @@ class BookService {
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json'
+      },
+      params: {
+        user_id: userId,
+        comment: comment,
+        rating: rating
       }
     }
-
     const path = `/api/v1/books/books/${bookId}/comments`
-    const data = {
-      user_id: userId,
-      comment: comment,
-      rating: rating
-    }
 
-    return http.post(path, data, config)
+    return http.post(path, {}, config)
       .then((res) => {
         return res
       })
