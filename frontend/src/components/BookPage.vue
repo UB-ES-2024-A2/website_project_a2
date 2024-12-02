@@ -38,6 +38,20 @@
         <!-- Updated Comments section -->
         <div class="comments-section">
           <h2>Reader Reviews</h2>
+          <button @click="showReviewForm = true" class="leave-review-button">Leave a Review</button>
+
+          <!-- Review Form -->
+          <div v-if="showReviewForm" class="review-form">
+            <h3>Write Your Review</h3>
+            <div class="rating-input">
+              <span v-for="star in 5" :key="star" @click="newReview.rating = star" class="star-input" :class="{'star-filled': star <= newReview.rating}">★</span>
+            </div>
+            <textarea v-model="newReview.comment" maxlength="250" placeholder="Write your review (max 250 characters)" class="review-textarea"></textarea>
+            <div class="char-count">{{ newReview.comment.length }}/250</div>
+            <button @click="submitReview" :disabled="!isReviewValid" class="submit-review-button">Submit Review</button>
+            <div v-if="reviewError" class="error-message">{{ reviewError }}</div>
+          </div>
+
           <div v-if="loadingComments" class="loading">
             <div class="spinner"></div>
             <p>Loading comments...</p>
@@ -76,6 +90,7 @@
 
 <script>
 import BookService from '../services/BookService'
+import UserService from '../services/UserService'
 
 export default {
   name: 'BookPage',
@@ -88,11 +103,22 @@ export default {
       error: null,
       comments: [],
       loadingComments: false,
-      commentsError: null
+      commentsError: null,
+      showReviewForm: false,
+      newReview: {
+        rating: 0,
+        comment: ''
+      },
+      reviewError: null
     }
   },
   props: {
     searchResults: Array
+  },
+  computed: {
+    isReviewValid () {
+      return this.newReview.rating > 0 && this.newReview.comment.trim().length > 0
+    }
   },
   watch: {
     '$route.query': {
@@ -145,6 +171,35 @@ export default {
       if (!dateString) return ''
       const options = {year: 'numeric', month: 'long', day: 'numeric'}
       return new Date(dateString).toLocaleDateString(undefined, options)
+    },
+    submitReview () {
+      this.reviewError = null
+      const email = this.$store.getters.username
+      UserService.readUserByEmail(email)
+        .then(response => {
+          const userId = response.data.id_user
+          return BookService.createCommentRating(this.book.id_book, userId, this.newReview.comment, this.newReview.rating)
+        })
+        .then(() => {
+          this.showReviewForm = false
+          this.newReview = { rating: 0, comment: '' }
+          this.fetchComments(this.book.id_book)
+          this.fetchBook(this.book.id_book)
+        })
+        .catch(error => {
+          console.error('Error submitting review:', error)
+          if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            this.reviewError = `Error ${error.response.status}: ${error.response.data.detail || 'Could not submit review'}`
+          } else if (error.request) {
+            // The request was made but no response was received
+            this.reviewError = 'Did not get a response from the server. Please try again.'
+          } else {
+            // Something happened in setting up the request that triggered an Error
+            this.reviewError = 'Error submitting review. Please try again later.'
+          }
+        })
     }
   },
   mounted () {
@@ -296,7 +351,7 @@ h2 {
 
 /* Updated styles for comments section */
 .comments-section {
-  margin-top: calc(var(--panel-gap) * 8);
+  margin-top: calc(var(--panel-gap));
 }
 
 .comments-list {
@@ -359,6 +414,93 @@ h2 {
   border-radius: var(--border-radius);
 }
 
+.leave-review-button {
+  background-color: var(--purple-background);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-bottom: var(--panel-gap);
+}
+
+.leave-review-button:hover {
+  background-color: var(--blue-background);
+  transform: translateY(-2px);
+}
+
+.review-form {
+  background-color: var(--half-transparent-background);
+  padding: calc(var(--panel-gap) * 2);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--panel-gap);
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rating-input {
+  font-size: 24px;
+  margin-bottom: var(--panel-gap);
+}
+
+.star-input {
+  cursor: pointer;
+  color: var(--text-color-secundary);
+}
+
+.star-input.star-filled {
+  color: var(--purple-background);
+}
+
+.review-textarea {
+  width: 100%;
+  height: 100px;
+  padding: var(--panel-gap);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--text-color-secundary);
+  background-color: var(--box-background-color);
+  color: var(--text-color);
+  resize: vertical;
+}
+
+.char-count {
+  text-align: right;
+  color: var(--text-color-secundary);
+  font-size: var(--font-size-xs);
+  margin-top: calc(var(--panel-gap) / 2);
+}
+
+.submit-review-button {
+  background-color: var(--purple-background);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-top: var(--panel-gap);
+}
+
+.submit-review-button:hover:not(:disabled) {
+  background-color: var(--blue-background);
+  transform: translateY(-2px);
+}
+
+.submit-review-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #ff4d4d;
+  margin-top: var(--panel-gap);
+  font-size: var(--font-size-xs);
+}
+
 @media (max-width: 768px) {
   .book-header {
     flex-direction: column;
@@ -378,7 +520,10 @@ h2 {
     align-items: center;
   }
   .comments-list {
-    width: 100%; /* Ancho completo en dispositivos móviles */
+    width: 100%;
+  }
+  .review-form {
+    width: 100%;
   }
 }
 </style>
