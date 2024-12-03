@@ -112,6 +112,23 @@ class BookService {
         return Promise.reject(error)
       })
   }
+  deleteComment (commentId) {
+    const config = {
+      headers: {
+        'accept': 'application/json'
+      }
+    }
+
+    const path = `/api/v1/books/CommentRatingPerBook/${commentId}`
+
+    return http.delete(path, config)
+      .then((res) => {
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
 }
 
 export default new BookService()
