@@ -34,6 +34,51 @@
             <a :href="book.buy_link" target="_blank" rel="noopener noreferrer" class="buy-button">Buy Now</a>
           </div>
         </div>
+
+        <!-- Updated Comments section -->
+        <div class="comments-section">
+          <h2>Reader Reviews</h2>
+          <button @click="showReviewForm = true" class="leave-review-button">Leave a Review</button>
+
+          <!-- Review Form -->
+          <div v-if="showReviewForm" class="review-form">
+            <h3>Write Your Review</h3>
+            <div class="rating-input">
+              <span v-for="star in 5" :key="star" @click="newReview.rating = star" class="star-input" :class="{'star-filled': star <= newReview.rating}">★</span>
+            </div>
+            <textarea v-model="newReview.comment" maxlength="250" placeholder="Write your review (max 250 characters)" class="review-textarea"></textarea>
+            <div class="char-count">{{ newReview.comment.length }}/250</div>
+            <button @click="submitReview" :disabled="!isReviewValid" class="submit-review-button">Submit Review</button>
+            <div v-if="reviewError" class="error-message">{{ reviewError }}</div>
+          </div>
+
+          <div v-if="loadingComments" class="loading">
+            <div class="spinner"></div>
+            <p>Loading comments...</p>
+          </div>
+          <div v-else-if="commentsError" class="error">
+            <p>{{ commentsError }}</p>
+          </div>
+          <div v-else-if="comments && comments.length > 0" class="comments-list">
+            <div v-for="comment in comments" :key="comment.id_comment_rating" class="comment-card">
+              <div class="comment-header">
+                <div class="user-info">
+                  <img src="@/assets/user-black.svg" alt="User avatar" class="user-avatar">
+                  <span class="username">{{ comment.username }}</span>
+                </div>
+                <div class="rating">
+                  <span class="stars">
+                    <span v-for="i in 5" :key="i" :class="{'star-filled': i <= comment.rating, 'star-empty': i > comment.rating}">★</span>
+                  </span>
+                </div>
+              </div>
+              <p class="comment-text">{{ comment.comment }}</p>
+            </div>
+          </div>
+          <div v-else class="no-comments">
+            No reviews yet. Be the first to review this book!
+          </div>
+        </div>
       </div>
       <div v-else class="no-data">No book data available</div>
     </div>
@@ -45,6 +90,7 @@
 
 <script>
 import BookService from '../services/BookService'
+import UserService from '../services/UserService'
 
 export default {
   name: 'BookPage',
@@ -54,11 +100,25 @@ export default {
       type: '',
       book: null,
       loading: false,
-      error: null
+      error: null,
+      comments: [],
+      loadingComments: false,
+      commentsError: null,
+      showReviewForm: false,
+      newReview: {
+        rating: 0,
+        comment: ''
+      },
+      reviewError: null
     }
   },
   props: {
     searchResults: Array
+  },
+  computed: {
+    isReviewValid () {
+      return this.newReview.rating > 0 && this.newReview.comment.trim().length > 0
+    }
   },
   watch: {
     '$route.query': {
@@ -71,6 +131,7 @@ export default {
           this.type = type
           if (type === 'book' && id) {
             this.fetchBook(id)
+            this.fetchComments(id)
           }
         }
       },
@@ -92,10 +153,68 @@ export default {
           this.loading = false
         })
     },
+    fetchComments (id) {
+      this.loadingComments = true
+      this.commentsError = null
+      BookService.getCommentsRatings(id)
+        .then(response => {
+          this.comments = response.data.comments
+          this.loadingComments = false
+        })
+        .catch(error => {
+          console.error('Error fetching comments:', error)
+          this.commentsError = 'Failed to load comments'
+          this.loadingComments = false
+        })
+    },
     formatDate (dateString) {
       if (!dateString) return ''
       const options = {year: 'numeric', month: 'long', day: 'numeric'}
       return new Date(dateString).toLocaleDateString(undefined, options)
+    },
+    submitReview () {
+      this.reviewError = null
+      const email = this.$store.getters.username
+      UserService.readUserByEmail(email)
+        .then(response => {
+          const userId = response.data.id_user
+          // Primero, verificamos si el usuario ya ha comentado
+          return BookService.getCommentsRatings(this.book.id_book)
+            .then(commentsResponse => {
+              const comments = commentsResponse.data.comments || []
+              const userHasCommented = comments.some(
+                comment => comment.user_id === userId
+              )
+              if (userHasCommented) {
+                throw new Error('You have already submitted a review for this book.')
+              }
+              // Si el usuario no ha comentado, procedemos a crear el comentario
+              return BookService.createCommentRating(
+                this.book.id_book,
+                userId,
+                this.newReview.comment,
+                this.newReview.rating
+              )
+            })
+        })
+        .then(() => {
+          this.showReviewForm = false
+          this.newReview = {rating: 0, comment: ''}
+          this.fetchComments(this.book.id_book)
+          this.fetchBook(this.book.id_book)
+        })
+        .catch(error => {
+          console.error('Error submitting review:', error)
+          if (error.message === 'You have already submitted a review for this book.') {
+            this.reviewError = error.message
+          } else if (error.response) {
+            this.reviewError = `Error ${error.response.status}: ${error.response.data.detail || 'Could not submit review'}`
+          } else if (error.request) {
+            this.reviewError = 'Did not get a response from the server. Please try again.'
+          } else {
+            this.reviewError = 'Error submitting review. Please try again later.'
+          }
+        })
     }
   },
   mounted () {
@@ -143,8 +262,12 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .book-content {
@@ -152,8 +275,12 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .book-header {
@@ -245,6 +372,159 @@ h2 {
   color: var(--purple-background);
 }
 
+/* Updated styles for comments section */
+.comments-section {
+  margin-top: calc(var(--panel-gap));
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--panel-gap);
+  width: 50%;
+  margin: 0 auto;
+}
+
+.comment-card {
+  background-color: var(--half-transparent-background);
+  border-radius: var(--border-radius);
+  padding: calc(var(--panel-gap) * 1.25);
+  margin-bottom: calc(var(--panel-gap) / 2);
+  margin-top: calc(var(--panel-gap) / 2);
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(var(--panel-gap) / 2);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--panel-gap) / 2);
+}
+
+.user-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+}
+
+.username {
+  font-weight: bold;
+  color: var(--text-color);
+  margin-right: calc(var(--panel-gap) / 2);
+}
+
+.stars {
+  display: inline-flex;
+  align-items: center;
+}
+
+.comment-text {
+  color: var(--text-color);
+  line-height: 1.3;
+  margin-top: calc(var(--panel-gap) / 2);
+  font-size: var(--font-size-xs);
+}
+
+.no-comments {
+  text-align: center;
+  color: var(--text-color-secundary);
+  padding: calc(var(--panel-gap) * 2);
+  background-color: var(--half-transparent-background);
+  border-radius: var(--border-radius);
+}
+
+.leave-review-button {
+  background-color: var(--purple-background);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-bottom: var(--panel-gap);
+}
+
+.leave-review-button:hover {
+  background-color: var(--blue-background);
+  transform: translateY(-2px);
+}
+
+.review-form {
+  background-color: var(--half-transparent-background);
+  padding: calc(var(--panel-gap) * 2);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--panel-gap);
+  width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rating-input {
+  font-size: 24px;
+  margin-bottom: var(--panel-gap);
+}
+
+.star-input {
+  cursor: pointer;
+  color: var(--text-color-secundary);
+}
+
+.star-input.star-filled {
+  color: var(--purple-background);
+}
+
+.review-textarea {
+  width: 100%;
+  height: 100px;
+  padding: var(--panel-gap);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--text-color-secundary);
+  background-color: var(--box-background-color);
+  color: var(--text-color);
+  resize: vertical;
+}
+
+.char-count {
+  text-align: right;
+  color: var(--text-color-secundary);
+  font-size: var(--font-size-xs);
+  margin-top: calc(var(--panel-gap) / 2);
+}
+
+.submit-review-button {
+  background-color: var(--purple-background);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-top: var(--panel-gap);
+}
+
+.submit-review-button:hover:not(:disabled) {
+  background-color: var(--blue-background);
+  transform: translateY(-2px);
+}
+
+.submit-review-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #ff4d4d;
+  margin-top: var(--panel-gap);
+  font-size: var(--font-size-xs);
+}
+
 @media (max-width: 768px) {
   .book-header {
     flex-direction: column;
@@ -258,6 +538,19 @@ h2 {
 
   .buy-button {
     align-self: center;
+  }
+
+  .comment-header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .comments-list {
+    width: 100%;
+  }
+
+  .review-form {
+    width: 100%;
   }
 }
 </style>
