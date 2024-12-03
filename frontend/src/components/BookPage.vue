@@ -48,6 +48,7 @@
             </div>
             <textarea v-model="newReview.comment" maxlength="250" placeholder="Write your review (max 250 characters)" class="review-textarea"></textarea>
             <div class="char-count">{{ newReview.comment.length }}/250</div>
+            <button @click="cancelReview" class="cancel-review-button">Cancel</button>
             <button @click="submitReview" :disabled="!isReviewValid" class="submit-review-button">Submit Review</button>
             <div v-if="reviewError" class="error-message">{{ reviewError }}</div>
           </div>
@@ -215,6 +216,10 @@ export default {
             this.reviewError = 'Error submitting review. Please try again later.'
           }
         })
+    },
+    cancelReview () {
+      this.showReviewForm = false
+      this.newReview = { rating: 0, comment: '' }
     }
   },
   mounted () {
@@ -523,6 +528,24 @@ h2 {
   color: #ff4d4d;
   margin-top: var(--panel-gap);
   font-size: var(--font-size-xs);
+}
+
+.cancel-review-button {
+  background-color: var(--text-color-secundary);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-top: var(--panel-gap);
+  margin-right: var(--panel-gap);
+}
+
+.cancel-review-button:hover {
+  background-color: var(--half-transparent-background);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
