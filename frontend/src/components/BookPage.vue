@@ -110,7 +110,8 @@ export default {
         rating: 0,
         comment: ''
       },
-      reviewError: null
+      reviewError: null,
+      userId: null
     }
   },
   props: {
@@ -175,28 +176,23 @@ export default {
     },
     submitReview () {
       this.reviewError = null
-      const email = this.$store.getters.username
-      UserService.readUserByEmail(email)
-        .then(response => {
-          const userId = response.data.id_user
-          // Primero, verificamos si el usuario ya ha comentado
-          return BookService.getCommentsRatings(this.book.id_book)
-            .then(commentsResponse => {
-              const comments = commentsResponse.data.comments || []
-              const userHasCommented = comments.some(
-                comment => comment.user_id === userId
-              )
-              if (userHasCommented) {
-                throw new Error('You have already submitted a review for this book.')
-              }
-              // Si el usuario no ha comentado, procedemos a crear el comentario
-              return BookService.createCommentRating(
-                this.book.id_book,
-                userId,
-                this.newReview.comment,
-                this.newReview.rating
-              )
-            })
+      // Primero, verificamos si el usuario ya ha comentado
+      BookService.getCommentsRatings(this.book.id_book)
+        .then(commentsResponse => {
+          const comments = commentsResponse.data.comments || []
+          const userHasCommented = comments.some(
+            comment => comment.user_id === this.userId
+          )
+          if (userHasCommented) {
+            throw new Error('You have already submitted a review for this book.')
+          }
+          // Si el usuario no ha comentado, procedemos a crear el comentario
+          return BookService.createCommentRating(
+            this.book.id_book,
+            this.userId,
+            this.newReview.comment,
+            this.newReview.rating
+          )
         })
         .then(() => {
           this.showReviewForm = false
@@ -227,6 +223,16 @@ export default {
 
     if (!username) {
       this.$router.push('/login')
+    } else {
+      // Obtenemos el ID del usuario al montar el componente
+      UserService.readUserByEmail(username)
+        .then(response => {
+          this.userId = response.data.id_user
+        })
+        .catch(error => {
+          console.error('Error fetching user ID:', error)
+          // Manejar el error según sea necesario
+        })
     }
   }
 }
