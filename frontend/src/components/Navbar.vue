@@ -98,7 +98,7 @@
         <div class="tooltip-container">
           <span class="tooltip-text">Logout</span>
           <div class="btn help-icon">
-            <svg @click="logOut" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg id="logOutBtn" @click="logOut" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 10H34C35.1046 10 36 10.8954 36 12V36C36 37.1046 35.1046 38 34 38H14C12.8954 38 12 37.1046 12 36V12C12 10.8954 12.8954 10 14 10Z"
                   stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M22 24H36" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -111,7 +111,7 @@
         <router-link to="/signup" v-slot="{ navigate }" custom>
           <button @click="navigate" class="btn btn-signup">Sign up</button>
         </router-link>
-        <router-link to="/login" v-slot="{ navigate }" custom>
+        <router-link id="logInBtn" to="/login" v-slot="{ navigate }" custom>
           <button @click="navigate" class="btn btn-login">Login</button>
         </router-link>
       </div>
