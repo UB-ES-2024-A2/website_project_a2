@@ -12,37 +12,90 @@
         <p>{{ error }}</p>
       </div>
       <div v-else-if="user" class="book-content">
-        <div class="container">
-          <div class="profile row">
-            <div class="col-md-8 d-flex flex-column">
-              <h2 class="book-title">My books</h2>
-            </div>
-            <div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-center">
-              <img src="@/assets/user-black.svg" alt="User Photo" class="img-fluid rounded-circle shadow" style="width: 150px; height: 150px;">
-              <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
-              <p><strong>Username:</strong> {{ user.username }}</p>
-              <p><strong>Email:</strong> {{ user.email }}</p>
+        <div v-if="!isEditing">
+          <div class="container">
+            <div class="profile row align-items-center">
+              <div class="col-md-8">
+                <h2 class="book-title">My Profile</h2>
+              </div>
+              <div class="col-md-4 text-center">
+                <img
+                  src="@/assets/user-black.svg"
+                  alt="User Photo"
+                  class="img-fluid rounded-circle shadow"
+                  style="width: 150px; height: 150px;"
+                />
+                <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <button @click="toggleEdit" class="btn-edit">Edit Profile</button>
+              </div>
             </div>
           </div>
         </div>
+        <div v-else>
+          <form @submit.prevent="updateUser">
+            <div style="justify-content: center; align-items: center;">
+              <img
+                src="@/assets/user-black.svg"
+                alt="User Photo"
+                class="img-fluid rounded-circle shadow"
+                style="width: 90px; height: 90px;"
+              />
+            </div>
+            <div>
+              <label for="name">Name</label>
+              <input id="name" v-model="userForm.name" />
+            </div>
+            <div>
+              <label for="surname">Surname</label>
+              <input id="surname" v-model="userForm.surname" />
+            </div>
+            <div>
+              <label for="username">Username</label>
+              <input id="username" v-model="userForm.username" />
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" v-model="userForm.email" />
+            </div>
+
+            <div v-if="errorList.length > 0" class="alert alert-danger">
+                <li v-for="err in errorList" :key="err">{{ err }}</li >
+            </div>
+
+            <button type="submit" class="btn btn-success">Save</button>
+            <button type="button" @click="toggleEdit" class="btn btn-secondary">Cancel</button>
+          </form>
+        </div>
       </div>
-      <div v-else class="no-data">No book data available</div>
+      <div v-else class="no-data">No user data available</div>
     </div>
   </div>
 </template>
 
 <script>
 import UserService from '../services/UserService'
+import VueJwtDecode from 'vue-jwt-decode'
 
 export default {
   name: 'BookPage',
   data () {
     return {
       user: null,
+      currentUser: null,
+      userForm: {
+        name: '',
+        surname: '',
+        username: '',
+        email: ''
+      },
+      isEditing: false,
       textInput: '',
       type: '',
       loading: false,
-      error: null
+      error: null,
+      errorList: []
     }
   },
   props: {
@@ -51,9 +104,9 @@ export default {
   watch: {
     '$route.query': {
       handler () {
-        let textInput = this.$route.query.search || ''
-        let type = this.$route.query.type || ''
-        let id = this.$route.query.id || ''
+        const textInput = this.$route.query.search || ''
+        const type = this.$route.query.type || ''
+        const id = this.$route.query.id || ''
         if (textInput !== '' && type !== '') {
           this.textInput = textInput
           this.type = type
@@ -65,19 +118,68 @@ export default {
       immediate: true
     }
   },
+  created () {
+    this.getCurrentUser()
+  },
   methods: {
+    async getCurrentUser () {
+      if (this.token) {
+        try {
+          let decoded = VueJwtDecode.decode(this.token)
+          const response = await UserService.readUserById(decoded.sub)
+          this.currentUser = response.data
+        } catch (error) {
+          console.error('Error loading current user:', error)
+          this.currentUser = {}
+        }
+      }
+    },
     fetchBook (id) {
       this.loading = true
       this.error = null
       UserService.readUserById(id)
-        .then(response => {
+        .then((response) => {
           this.user = response.data
+          this.userForm = { ...this.user }
           this.loading = false
         })
-        .catch(error => {
+        .catch((error) => {
           console.error('Error fetching user:', error)
           this.error = 'Failed to load user data'
           this.loading = false
+        })
+    },
+    toggleEdit () {
+      this.isEditing = !this.isEditing
+    },
+    validateUser () {
+      this.errorList = []
+      if (!this.userForm.name.trim()) this.errorList.push('Name is required.')
+      if (!this.userForm.surname.trim()) this.errorList.push('Surname is required.')
+      if (!this.userForm.username.trim()) this.errorList.push('Username is required.')
+      if (!this.userForm.email.trim()) {
+        this.errorList.push('Email is required.')
+      } else if (!/\S+@\S+\.\S+/.test(this.userForm.email)) {
+        this.errorList.push('Invalid email format.')
+      }
+
+      return this.errorList.length === 0
+    },
+    updateUser () {
+      console.log('current',this.currentUser)
+
+      if (!this.validateUser()) {
+        return
+      }
+      console.log('current',this.currentUser)
+      UserService.updateUser(this.currentUser.user_id, this.userForm)
+        .then(() => {
+          this.user = { ...this.userForm }
+          this.isEditing = false
+        })
+        .catch((error) => {
+          console.error('Error updating user:', error)
+          this.errorList = ['Failed to update user data.']
         })
     }
   },
@@ -91,6 +193,22 @@ export default {
 }
 </script>
 <style scoped>
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 50%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 .main-page {
   grid-area: main-page;
   padding: calc(var(--panel-gap) * 2);
@@ -100,12 +218,9 @@ export default {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.book-page-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.loading, .error, .no-data {
+.loading,
+.error,
+.no-data {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -125,8 +240,12 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .book-content {
@@ -134,75 +253,14 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.book-header {
-  display: flex;
-  gap: calc(var(--panel-gap) * 4);
-  margin-bottom: calc(var(--panel-gap) * 4);
-}
-
-.book-cover {
-  flex-shrink: 0;
-}
-
-.book-image {
-  width: 300px;
-  height: auto;
-  border-radius: var(--border-radius);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-}
-
-.book-image:hover {
-  transform: scale(1.05);
-}
-
-.book-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--panel-gap);
-}
-
-.book-title {
-  font-size: var(--font-size-title);
-  margin-bottom: 0;
-}
-
-.book-author {
-  font-size: var(--font-size-medium);
-  color: var(--text-color-secundary);
-}
-
-.book-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--panel-gap) * 2);
-  font-size: var(--font-size-xs);
-}
-
-.book-meta-item {
-  background-color: var(--half-transparent-background);
-  padding: calc(var(--panel-gap) / 2) var(--panel-gap);
-  border-radius: var(--border-radius);
-}
-
-.stars {
-  color: var(--purple-background);
-}
-
-.star-empty {
-  color: var(--text-color-secundary);
-}
-
-.book-synopsis {
-  background-color: var(--half-transparent-background);
-  padding: calc(var(--panel-gap) * 2);
-  border-radius: var(--border-radius);
-  margin-top: var(--panel-gap);
-}
 .profile {
   background-color: var(--half-transparent-background);
   padding: calc(var(--panel-gap) * 2);
@@ -211,21 +269,20 @@ export default {
   min-height: 60vh;
   min-width: 170vh;
 }
-.buy-button {
-  align-self: flex-start;
-  background-color: var(--purple-background);
-  color: var(--text-color);
-  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
-  border-radius: calc(var(--border-radius) * 2);
-  text-decoration: none;
-  font-weight: bold;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  margin-top: var(--panel-gap);
+
+.alert-danger {
+    background-color: rgba(255, 0, 0, 0.2);
+  border: 0.063rem solid red;
+  color: white;
+  padding: 0.625rem;
+  border-radius: 50.313rem;
+  margin-top: 1.25rem;
+  list-style-type: none
 }
 
-.buy-button:hover {
-  background-color: var(--blue-background);
-  transform: translateY(-2px);
+.alert-danger ul {
+  margin: 0;
+  padding-left: 1.5rem;
 }
 
 h2 {
@@ -249,4 +306,16 @@ h2 {
     align-self: center;
   }
 }
+.btn-edit{
+  margin-right: var(--panel-gap);
+  font-weight: 700;
+  color: var(--text-color);
+  width: 9rem;
+  height: 3rem;
+  transition: transform 0.3s ease-in-out;
+  border-radius: calc(var(--border-radius) * 2);
+  background: var(--purple-background);
+
+}
+
 </style>
