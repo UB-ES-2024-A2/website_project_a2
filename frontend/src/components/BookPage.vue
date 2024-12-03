@@ -13,12 +13,12 @@
       </div>
       <div v-else-if="user" class="book-content">
         <div v-if="!isEditing">
-          <div class="container">
-            <div class="profile row align-items-center">
-              <div class="col-md-8">
-                <h2 class="book-title">My Profile</h2>
+          <div class="container mt-4">
+            <div class="profile row">
+              <div class="col-md-8 d-flex flex-column">
+                <h2 class="book-title mb-4">My Books</h2>
               </div>
-              <div class="col-md-4 text-center">
+              <div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center">
                 <img
                   src="@/assets/user-black.svg"
                   alt="User Photo"
@@ -28,7 +28,7 @@
                 <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
-                <button @click="toggleEdit" class="btn-edit">Edit Profile</button>
+                <button v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn-edit">Edit Profile</button>
               </div>
             </div>
           </div>
@@ -121,6 +121,11 @@ export default {
   created () {
     this.getCurrentUser()
   },
+  computed: {
+    token () {
+      return this.$store.getters.token
+    }
+  },
   methods: {
     async getCurrentUser () {
       if (this.token) {
@@ -166,13 +171,10 @@ export default {
       return this.errorList.length === 0
     },
     updateUser () {
-      console.log('current',this.currentUser)
-
       if (!this.validateUser()) {
         return
       }
-      console.log('current',this.currentUser)
-      UserService.updateUser(this.currentUser.user_id, this.userForm)
+      UserService.updateUser(this.currentUser.id_user, this.userForm)
         .then(() => {
           this.user = { ...this.userForm }
           this.isEditing = false
@@ -267,7 +269,7 @@ input {
   border-radius: var(--border-radius);
   margin-top: var(--panel-gap);
   min-height: 60vh;
-  min-width: 170vh;
+  min-width: 150vh;
 }
 
 .alert-danger {
