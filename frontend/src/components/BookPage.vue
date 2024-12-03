@@ -48,6 +48,7 @@
             </div>
             <textarea v-model="newReview.comment" maxlength="250" placeholder="Write your review (max 250 characters)" class="review-textarea"></textarea>
             <div class="char-count">{{ newReview.comment.length }}/250</div>
+            <button @click="cancelReview" class="cancel-review-button">Cancel</button>
             <button @click="submitReview" :disabled="!isReviewValid" class="submit-review-button">Submit Review</button>
             <div v-if="reviewError" class="error-message">{{ reviewError }}</div>
           </div>
@@ -56,10 +57,7 @@
             <div class="spinner"></div>
             <p>Loading comments...</p>
           </div>
-          <div v-else-if="commentsError" class="error">
-            <p>{{ commentsError }}</p>
-          </div>
-          <div v-else-if="comments && comments.length > 0" class="comments-list">
+          <div v-if="comments && comments.length > 0" class="comments-list">
             <div v-for="comment in comments" :key="comment.id_comment_rating" class="comment-card">
               <div class="comment-header">
                 <div class="user-info">
@@ -73,10 +71,23 @@
                 </div>
               </div>
               <p class="comment-text">{{ comment.comment }}</p>
+              <button v-if="comment.user_id === userId" @click="showDeleteConfirmationModal(comment.id_comment_rating)" class="delete-comment-button">
+                <img src="@/assets/trashcan.svg" alt="Delete" class="trash-icon">
+              </button>
             </div>
           </div>
           <div v-else class="no-comments">
             No reviews yet. Be the first to review this book!
+          </div>
+          <div v-if="showDeleteConfirmation" class="delete-confirmation-modal">
+            <div class="modal-content">
+              <h3>Delete Review</h3>
+              <p>Are you sure you want to delete this review?</p>
+              <div class="modal-buttons">
+                <button @click="confirmDelete" class="confirm-button">Yes</button>
+                <button @click="cancelDelete" class="cancel-button">No</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -103,13 +114,16 @@ export default {
       error: null,
       comments: [],
       loadingComments: false,
-      commentsError: null,
       showReviewForm: false,
       newReview: {
         rating: 0,
         comment: ''
       },
-      reviewError: null
+      reviewError: null,
+      userId: null,
+      userComment: null,
+      showDeleteConfirmation: false,
+      commentToDelete: null
     }
   },
   props: {
@@ -155,15 +169,15 @@ export default {
     },
     fetchComments (id) {
       this.loadingComments = true
-      this.commentsError = null
       BookService.getCommentsRatings(id)
         .then(response => {
           this.comments = response.data.comments
+          this.userComment = this.comments.find(comment => comment.user_id === this.userId)
           this.loadingComments = false
         })
         .catch(error => {
           console.error('Error fetching comments:', error)
-          this.commentsError = 'Failed to load comments'
+          this.comments = []
           this.loadingComments = false
         })
     },
@@ -172,30 +186,38 @@ export default {
       const options = {year: 'numeric', month: 'long', day: 'numeric'}
       return new Date(dateString).toLocaleDateString(undefined, options)
     },
+    deleteComment (commentId) {
+      BookService.deleteComment(commentId)
+        .then(() => {
+          // Actualizar la lista de comentarios
+          this.fetchComments(this.book.id_book)
+          // Actualizar la información del libro (por si cambia el rating)
+          this.fetchBook(this.book.id_book)
+        })
+        .catch(error => {
+          console.error('Error deleting comment:', error)
+          // Manejar el error (por ejemplo, mostrar un mensaje al usuario)
+        })
+    },
     submitReview () {
       this.reviewError = null
-      const email = this.$store.getters.username
-      UserService.readUserByEmail(email)
-        .then(response => {
-          const userId = response.data.id_user
-          // Primero, verificamos si el usuario ya ha comentado
-          return BookService.getCommentsRatings(this.book.id_book)
-            .then(commentsResponse => {
-              const comments = commentsResponse.data.comments || []
-              const userHasCommented = comments.some(
-                comment => comment.user_id === userId
-              )
-              if (userHasCommented) {
-                throw new Error('You have already submitted a review for this book.')
-              }
-              // Si el usuario no ha comentado, procedemos a crear el comentario
-              return BookService.createCommentRating(
-                this.book.id_book,
-                userId,
-                this.newReview.comment,
-                this.newReview.rating
-              )
-            })
+      // Primero, verificamos si el usuario ya ha comentado
+      BookService.getCommentsRatings(this.book.id_book)
+        .then(commentsResponse => {
+          const comments = commentsResponse.data.comments || []
+          const userHasCommented = comments.some(
+            comment => comment.user_id === this.userId
+          )
+          if (userHasCommented) {
+            throw new Error('You have already submitted a review for this book.')
+          }
+          // Si el usuario no ha comentado, procedemos a crear el comentario
+          return BookService.createCommentRating(
+            this.book.id_book,
+            this.userId,
+            this.newReview.comment,
+            this.newReview.rating
+          )
         })
         .then(() => {
           this.showReviewForm = false
@@ -215,6 +237,34 @@ export default {
             this.reviewError = 'Error submitting review. Please try again later.'
           }
         })
+    },
+    cancelReview () {
+      this.showReviewForm = false
+      this.newReview = {rating: 0, comment: ''}
+    },
+    showDeleteConfirmationModal (commentId) {
+      this.commentToDelete = commentId
+      this.showDeleteConfirmation = true
+    },
+
+    confirmDelete () {
+      if (this.commentToDelete) {
+        BookService.deleteComment(this.commentToDelete)
+          .then(() => {
+            this.fetchComments(this.book.id_book)
+            this.fetchBook(this.book.id_book)
+            this.showDeleteConfirmation = false
+            this.commentToDelete = null
+          })
+          .catch(error => {
+            console.error('Error deleting comment:', error)
+          })
+      }
+    },
+
+    cancelDelete () {
+      this.showDeleteConfirmation = false
+      this.commentToDelete = null
     }
   },
   mounted () {
@@ -222,6 +272,16 @@ export default {
 
     if (!username) {
       this.$router.push('/login')
+    } else {
+      // Obtenemos el ID del usuario al montar el componente
+      UserService.readUserByEmail(username)
+        .then(response => {
+          this.userId = response.data.id_user
+        })
+        .catch(error => {
+          console.error('Error fetching user ID:', error)
+          // Manejar el error según sea necesario
+        })
     }
   }
 }
@@ -386,6 +446,7 @@ h2 {
 }
 
 .comment-card {
+  position: relative;
   background-color: var(--half-transparent-background);
   border-radius: var(--border-radius);
   padding: calc(var(--panel-gap) * 1.25);
@@ -523,6 +584,102 @@ h2 {
   color: #ff4d4d;
   margin-top: var(--panel-gap);
   font-size: var(--font-size-xs);
+}
+
+.cancel-review-button {
+  background-color: var(--text-color-secundary);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-top: var(--panel-gap);
+  margin-right: var(--panel-gap);
+}
+
+.cancel-review-button:hover {
+  background-color: var(--half-transparent-background);
+  transform: translateY(-2px);
+}
+
+.delete-comment-button {
+  position: absolute;
+  bottom: var(--panel-gap);
+  right: var(--panel-gap);
+  background: none;
+  border: none;
+  padding: calc(var(--panel-gap) / 2);
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.delete-comment-button:hover {
+  transform: scale(1.1);
+}
+
+.trash-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: white; /* Updated fill color */
+}
+
+.delete-confirmation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--box-background-color);
+  padding: calc(var(--panel-gap) * 3);
+  border-radius: var(--border-radius);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: var(--panel-gap);
+  margin-top: calc(var(--panel-gap) * 2);
+}
+
+.confirm-button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.confirm-button:hover {
+  background-color: #cc0000;
+}
+
+.cancel-button {
+  background-color: var(--text-color-secundary);
+  color: white;
+  border: none;
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background-color: var(--half-transparent-background);
 }
 
 @media (max-width: 768px) {
