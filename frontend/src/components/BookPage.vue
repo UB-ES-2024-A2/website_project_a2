@@ -57,10 +57,7 @@
             <div class="spinner"></div>
             <p>Loading comments...</p>
           </div>
-          <div v-else-if="commentsError" class="error">
-            <p>{{ commentsError }}</p>
-          </div>
-          <div v-else-if="comments && comments.length > 0" class="comments-list">
+          <div v-if="comments && comments.length > 0" class="comments-list">
             <div v-for="comment in comments" :key="comment.id_comment_rating" class="comment-card">
               <div class="comment-header">
                 <div class="user-info">
@@ -117,7 +114,6 @@ export default {
       error: null,
       comments: [],
       loadingComments: false,
-      commentsError: null,
       showReviewForm: false,
       newReview: {
         rating: 0,
@@ -173,7 +169,6 @@ export default {
     },
     fetchComments (id) {
       this.loadingComments = true
-      this.commentsError = null
       BookService.getCommentsRatings(id)
         .then(response => {
           this.comments = response.data.comments
@@ -182,7 +177,7 @@ export default {
         })
         .catch(error => {
           console.error('Error fetching comments:', error)
-          this.commentsError = 'Failed to load comments'
+          this.comments = []
           this.loadingComments = false
         })
     },
@@ -245,7 +240,7 @@ export default {
     },
     cancelReview () {
       this.showReviewForm = false
-      this.newReview = { rating: 0, comment: '' }
+      this.newReview = {rating: 0, comment: ''}
     },
     showDeleteConfirmationModal (commentId) {
       this.commentToDelete = commentId
