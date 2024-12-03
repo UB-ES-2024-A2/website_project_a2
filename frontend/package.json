@@ -5,10 +5,11 @@
   "author": "Marta",
   "private": true,
   "scripts": {
-    "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
+    "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js --host 0.0.0.0",
     "start": "npm run dev",
     "lint": "eslint --ext .js,.vue src",
-    "build": "node build/build.js"
+    "build": "node build/build.js",
+    "test": "ts-node ./tests/*.ts"
   },
   "dependencies": {
     "axios": "^0.25.0",
@@ -20,6 +21,8 @@
     "vuex": "^3.6.2"
   },
   "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/selenium-webdriver": "^4.1.27",
     "autoprefixer": "^7.1.2",
     "babel-core": "^6.22.1",
     "babel-eslint": "^8.2.1",
@@ -54,8 +57,11 @@
     "postcss-loader": "^2.0.8",
     "postcss-url": "^7.2.1",
     "rimraf": "^2.6.0",
+    "selenium-webdriver": "^4.27.0",
     "semver": "^5.3.0",
     "shelljs": "^0.7.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
     "uglifyjs-webpack-plugin": "^1.1.1",
     "url-loader": "^0.5.8",
     "vue-loader": "^13.3.0",
