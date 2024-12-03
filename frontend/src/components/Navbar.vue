@@ -91,7 +91,7 @@
           </div>
         <div class="tooltip-container">
             <span class="tooltip-text">Profile</span>
-            <div class="btn profile-icon">
+            <div class="btn profile-icon" @click="redirectToUserProfile">
               <img loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
             </div>
           </div>
@@ -112,6 +112,7 @@ import Suggestions from '@/components/Suggestions'
 import BookService from '../services/BookService'
 import debounce from 'lodash/debounce'
 import UserService from '../services/UserService'
+import VueJwtDecode from 'vue-jwt-decode'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
@@ -142,11 +143,13 @@ export default {
       filteredSuggestionsBooks: [],
       errorMessages: [],
       showSuggestions: false,
-      isLoading: false
+      isLoading: false,
+      currentUser: null
     }
   },
   created () {
     this.debouncedFilter = debounce(this.filterSuggestions, 300)
+    this.getCurrentUser()
   },
   watch: {
     '$route.query': {
@@ -180,6 +183,30 @@ export default {
     }
   },
   methods: {
+    async getCurrentUser () {
+      if (this.token) {
+        try {
+          let decoded = VueJwtDecode.decode(this.token)
+          const response = await UserService.readUserById(decoded.sub)
+          this.currentUser = response.data
+        } catch (error) {
+          console.error('Error loading current user:', error)
+          this.currentUser = {}
+        }
+      }
+    },
+    redirectToUserProfile () {
+      if (this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {
+        const searchParams = new URLSearchParams({
+          search: `${this.currentUser.name} ${this.currentUser.surname}`,
+          type: 'user',
+          id: this.currentUser.id_user
+        }).toString()
+        this.$router.push(`/?${searchParams}`)
+      } else {
+        console.error('Current user not available')
+      }
+    },
     toggleSuggestions () {
       this.showSuggestions = true
     },
