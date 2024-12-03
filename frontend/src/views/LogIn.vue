@@ -46,7 +46,7 @@
 
                   <div id="errorMessage" class="error-message-box text-error" v-if="errorMessage">{{ errorMessage }}</div>
                   <div class="mt-4 pt-2">
-                    <input class="btn btn-primary btn-lg w-100 gradient-custom" type="submit" value="Login"/>
+                    <input id="loginButton" class="btn btn-primary btn-lg w-100 gradient-custom" type="submit" value="Login"/>
                   </div>
 
                   <p class="text-center text-muted mt-5 mb-0">
