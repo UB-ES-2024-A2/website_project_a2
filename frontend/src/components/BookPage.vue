@@ -97,13 +97,6 @@ export default {
       const options = {year: 'numeric', month: 'long', day: 'numeric'}
       return new Date(dateString).toLocaleDateString(undefined, options)
     }
-  },
-  mounted () {
-    const username = this.$store.getters.username
-
-    if (!username) {
-      this.$router.push('/login')
-    }
   }
 }
 </script>
