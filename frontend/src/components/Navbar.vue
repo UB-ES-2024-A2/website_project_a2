@@ -206,6 +206,10 @@ export default {
         }
       }
     },
+    logOut () {
+      this.$store.dispatch('clearUser')
+      this.$router.push('/')
+    },
     redirectToUserProfile () {
       if (this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {
         const searchParams = new URLSearchParams({

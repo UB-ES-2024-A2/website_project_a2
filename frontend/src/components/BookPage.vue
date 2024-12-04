@@ -71,7 +71,7 @@
                 </div>
               </div>
               <p class="comment-text">{{ comment.comment }}</p>
-              <button v-if="comment.user_id === userId" @click="showDeleteConfirmationModal(comment.id_comment_rating)" class="delete-comment-button">
+              <button v-if="comment.user_id === currentUser.id_user" @click="showDeleteConfirmationModal(comment.id_comment_rating)" class="delete-comment-button">
                 <img src="@/assets/trashcan.svg" alt="Delete" class="trash-icon">
               </button>
             </div>
@@ -118,7 +118,7 @@
                 <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
-                <button v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn-edit">Edit Profile</button>
+                <button v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
               </div>
             </div>
           </div>
@@ -220,6 +220,7 @@ export default {
           }
           if (type === 'book' && id) {
             this.fetchBook(id)
+            this.fetchComments(id)
           }
         }
       },
@@ -258,7 +259,6 @@ export default {
           this.error = 'Failed to load book data'
           this.loading = false
         })
-      this.fetchComments(id)
     },
     fetchComments (id) {
       this.loadingComments = true
