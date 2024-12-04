@@ -105,10 +105,7 @@
         <div v-if="!isEditing">
           <div class="container mt-4">
             <div class="profile row">
-              <div class="col-md-8 d-flex flex-column">
-                <!-- <h2 class="book-title mb-4"></h2> -->
-              </div>
-              <div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center">
+              <div class="col-md-12 d-flex flex-column align-items-center justify-content-center text-center">
                 <img
                   src="@/assets/user-black.svg"
                   alt="User Photo"
