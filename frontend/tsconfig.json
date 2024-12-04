@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "target": "es6",                          // Establece la versión de ECMAScript a usar
+    "module": "commonjs",                     // Usar el sistema de módulos CommonJS (ideal para Node.js)
+    "strict": true,                           // Habilita el modo estricto, lo que ayuda a detectar errores rápidamente
+    "noImplicitAny": true,                    // Prohíbe el uso de 'any' sin un tipo explícito
+    "esModuleInterop": true,                  // Permite la interoperabilidad con módulos ES y CommonJS
+    "moduleResolution": "node",               // Resuelve módulos como lo hace Node.js
+    "resolveJsonModule": true,                // Permite importar archivos JSON como módulos
+    "isolatedModules": true,                  // Garantiza que cada archivo se puede compilar de manera independiente
+    "lib": [
+      "dom",                                  // Incluye las definiciones de tipos del DOM
+      "dom.iterable",                         // Permite la iteración sobre objetos del DOM como NodeList y HTMLCollection
+      "esnext"                                 // Habilita las definiciones de los métodos más recientes de ECMAScript
+    ],
+    "types": ["mocha", "node"],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "skipLibCheck": true,                     // Omite la verificación de tipos en las bibliotecas
+    "noEmit": true,                           // No emite archivos de salida, solo compila los archivos
+    "incremental": true                       // Habilita la compilación incremental (mejora la velocidad de compilación)
+  },
+  "include": [
+    "frontend/tests/**/*.ts",                 // Incluye los archivos de prueba que están dentro de la carpeta 'tests' en el frontend
+    "frontend/src/**/*.ts",                   // Incluye los archivos de código fuente TypeScript de Vue (si son utilizados)
+    "next-env.d.ts",                           // Archivos de entorno específicos de Next.js
+    "tests/**/*.ts",  // Asegúrate de incluir tus pruebas
+    "src/**/*.ts"
+
+  ],
+  "exclude": [
+    "node_modules",                           // Excluye la carpeta 'node_modules' (no se necesitan archivos de dependencias)
+    "dist",                                   // Excluye la carpeta de distribución (no se necesitan archivos generados)
+    "frontend/src/**/*.vue",                  // Excluye archivos .vue, ya que no son relevantes para la compilación de TS
+    "frontend/src/**/*.js",                   // Excluye archivos .js relacionados con Vue y servicios, ya que no son relevantes para TS
+    "frontend/src/**/*.savage"                // Excluye archivos .savage (posiblemente relacionados con iconos o otros recursos)
+  ]
+}
