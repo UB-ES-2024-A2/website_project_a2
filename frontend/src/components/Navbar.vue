@@ -78,6 +78,7 @@
     </div>
 
       <div class="right-wrap" v-if="token !== ''">
+          <!--
           <div class="tooltip-container">
             <span class="tooltip-text">Help</span>
             <div class="btn help-icon">
@@ -89,10 +90,11 @@
               </svg>
             </div>
           </div>
+          -->
         <div class="tooltip-container">
             <span class="tooltip-text">Profile</span>
             <div class="btn profile-icon" @click="redirectToUserProfile">
-              <img loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
+              <img id="profileBtn" loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
             </div>
           </div>
         <div class="tooltip-container">
