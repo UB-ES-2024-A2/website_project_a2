@@ -16,6 +16,10 @@ export default new Vuex.Store({
     setDisplayMode (state, display) {
       state.displayMode = display
       localStorage.setItem('displayMode', display)
+    },
+    clearUser (state) {
+      state.username = ''
+      localStorage.removeItem('username')
     }
   },
   actions: {
@@ -24,6 +28,9 @@ export default new Vuex.Store({
     },
     setDisplayMode ({ commit }, display) {
       commit('setDisplayMode', display)
+    },
+    clearUser ({ commit }) {
+      commit('clearUser')
     }
   },
   getters: {

@@ -1,0 +1,85 @@
+name: Backend Tests
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+  pull_request:
+
+jobs:
+  test:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout repository
+    - name: Check out the repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Python 3.11.2
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.2'
+
+    # Install Poetry dependencies
+    - uses: Gr1N/setup-poetry@v8
+      with:
+        poetry-version: '1.8.4'
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        poetry install --all-extras
+
+    # Test execution
+    - name: Run tests
+      env:
+        HOST: ${{ secrets.HOST }}
+        USERDB: ${{ secrets.USERDB }}
+        PASSWORD: ${{ secrets.PASSWORD }}
+        DATABASE: ${{ secrets.DATABASE }}
+        PROJECT_NAME: "ReadHub"
+        FIRST_SUPERUSER: "admin"
+        FIRST_SUPERUSER_PASSWORD: "admin123"
+      run: |
+        cd backend
+        poetry run pytest --cov=app --cov-report=xml:coverage.xml
+
+    - name: Python Coverage
+      uses: orgoro/coverage@v3.2
+      with:
+        coverageFile: backend/coverage.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    # Lint execution
+    - name: Pylint
+      id: calcular_puntuacion
+      run: |
+        cd backend
+        poetry run pylint --exit-zero --max-line-length=180 app > pylint_output.txt
+        SCORE=$(grep -oP 'Your code has been rated at \K[0-9.]+(?=/10)' pylint_output.txt)
+        ERRORS=$(grep -E "^[^ ]+:[0-9]+:[0-9]+:" pylint_output.txt | head -n 10)  
+        echo "score=$SCORE" >> $GITHUB_OUTPUT
+        echo "errors<<EOF" >> $GITHUB_OUTPUT
+        echo "$ERRORS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Test Summary Pylint Score
+      run: |
+        echo "# 📝 Pylint Score" >> $GITHUB_STEP_SUMMARY
+        echo "Your code has been rated at **${{ steps.calcular_puntuacion.outputs.score }}/10** by Pylint." >> $GITHUB_STEP_SUMMARY
+        echo "## Recommendations" >> $GITHUB_STEP_SUMMARY
+        if [[ -z "${{ steps.calcular_puntuacion.outputs.errors }}" ]]; then
+          echo "No issues detected by Pylint. 🎉" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### Top Issues Detected:" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.calcular_puntuacion.outputs.errors }}" | while read line; do
+            echo "- \`${line}\`" >> $GITHUB_STEP_SUMMARY
+          done
+        fi

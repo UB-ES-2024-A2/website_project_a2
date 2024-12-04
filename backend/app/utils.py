@@ -14,11 +14,24 @@ from app.core.config import settings
 
 @dataclass
 class EmailData:
+    """
+    Class to hold the data for sending emails
+    """
     html_content: str
     subject: str
 
 
 def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
+    """
+    Renders an email template with the given context.
+
+    Args:
+        template_name (str): The name of the template to render.
+        context (dict): The context to pass into the template.
+
+    Returns:
+        str: The rendered HTML content of the email.
+    """
     template_str = (
         Path(__file__).parent / "email-templates" / "build" / template_name
     ).read_text()
@@ -32,6 +45,17 @@ def send_email(
     subject: str = "",
     html_content: str = "",
 ) -> None:
+    """
+    Sends an email with the specified content.
+
+    Args:
+        email_to (str): The recipient's email address.
+        subject (str): The subject of the email.
+        html_content (str): The HTML content of the email.
+
+    Raises:
+        AssertionError: If email sending is not enabled in settings.
+    """
     assert settings.emails_enabled, "no provided configuration for email variables"
     message = emails.Message(
         subject=subject,
@@ -48,10 +72,19 @@ def send_email(
     if settings.SMTP_PASSWORD:
         smtp_options["password"] = settings.SMTP_PASSWORD
     response = message.send(to=email_to, smtp=smtp_options)
-    logging.info(f"send email result: {response}")
+    logging.info("Send email result: %s", response)
 
 
 def generate_test_email(email_to: str) -> EmailData:
+    """
+    Generates a test email for a given recipient.
+
+    Args:
+        email_to (str): The recipient's email address.
+
+    Returns:
+        EmailData: The email data containing subject and HTML content.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
@@ -62,6 +95,17 @@ def generate_test_email(email_to: str) -> EmailData:
 
 
 def generate_reset_password_email(email_to: str, email: str, token: str) -> EmailData:
+    """
+    Generates a password reset email for a user.
+
+    Args:
+        email_to (str): The recipient's email address.
+        email (str): The username/email for password recovery.
+        token (str): The reset token for the password reset link.
+
+    Returns:
+        EmailData: The email data containing subject and HTML content.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Password recovery for user {email}"
     link = f"{settings.server_host}/reset-password?token={token}"
@@ -81,6 +125,17 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
 def generate_new_account_email(
     email_to: str, username: str, password: str
 ) -> EmailData:
+    """
+    Generates a new account email for a user.
+
+    Args:
+        email_to (str): The recipient's email address.
+        username (str): The username for the new account.
+        password (str): The password for the new account.
+
+    Returns:
+        EmailData: The email data containing subject and HTML content.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
     html_content = render_email_template(
@@ -97,6 +152,15 @@ def generate_new_account_email(
 
 
 def generate_password_reset_token(email: str) -> str:
+    """
+    Generates a JWT token for password reset.
+
+    Args:
+        email (str): The email address for which to generate the token.
+
+    Returns:
+        str: The generated JWT token.
+    """
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.utcnow()
     expires = now + delta
@@ -110,6 +174,15 @@ def generate_password_reset_token(email: str) -> str:
 
 
 def verify_password_reset_token(token: str) -> str | None:
+    """
+    Verifies the given password reset token.
+
+    Args:
+        token (str): The JWT token to verify.
+
+    Returns:
+        str | None: The email associated with the token if valid, else None.
+    """
     try:
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return str(decoded_token["sub"])

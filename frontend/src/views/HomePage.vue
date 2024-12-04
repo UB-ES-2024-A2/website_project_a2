@@ -40,7 +40,7 @@ import BookService from '../services/BookService'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
-  SEARCH: 'book-page',
+  BOOK: 'book-page',
   CATEGORY: 'category',
   PROFILE: 'Profile'
 })
@@ -153,47 +153,32 @@ export default {
       }
     },
     startSearch (data) {
-      this.currentTab = PageEnum.SEARCH
       console.log('Searching for:', data)
 
       // If a request is made to the API, it should be async
       // Book example
       if (data[1] === 'book') {
+        this.currentTab = PageEnum.BOOK
         this.searchResults = [
           {
             title: 'Search',
             list:
               {
                 type: 'book',
-                data: {
-                  title: 'Book1',
-                  Authors: 'AuthorsName',
-                  Synopsis: 'Synopsis info',
-                  BuyLink: 'BuyLink info',
-                  Genres: 'Gerne1, Gernre2',
-                  Rating: 0.0,
-                  Editorial: 'EditorialName',
-                  Comments: [],
-                  PublicationDate: '11/11/11',
-                  Image: 'image'
-                }
+                data: data[0]
               }
           }
         ]
       } else if (data[1] === 'user') {
-        //  User example
+        this.currentTab = PageEnum.BOOK
+        // User example
         this.searchResults = [
           {
             title: 'Search',
             list:
               {
                 type: 'user',
-                data: {
-                  name: 'Book1',
-                  surname: 'AuthorsName',
-                  username: 'Synopsis info',
-                  email: 'BuyLink info'
-                }
+                data: data[0]
               }
           }
         ]

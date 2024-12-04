@@ -57,6 +57,23 @@ class UserService {
         return Promise.reject(error)
       })
   }
+  readUserByEmail (email) {
+    const config = {
+      headers: {
+        'accept': 'application/json'
+      }
+    }
+
+    const path = '/api/v1/users/by-email/' + email
+
+    return http.get(path, config)
+      .then((res) => {
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
   updateUser (id, userData) {
     const config = {
       headers: {
