@@ -220,7 +220,6 @@ export default {
           }
           if (type === 'book' && id) {
             this.fetchBook(id)
-            this.fetchComments(id)
           }
         }
       },
@@ -259,6 +258,7 @@ export default {
           this.error = 'Failed to load book data'
           this.loading = false
         })
+      this.fetchComments(id)
     },
     fetchComments (id) {
       this.loadingComments = true
@@ -306,7 +306,7 @@ export default {
             throw new Error('You have already submitted a review for this book.')
           }
           // Si el usuario no ha comentado, procedemos a crear el comentario
-          console.log('user',this.currentUser)
+          console.log('user', this.currentUser)
           return BookService.createCommentRating(
             this.book.id_book,
             this.currentUser.id_user,
