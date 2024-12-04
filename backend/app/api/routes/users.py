@@ -178,7 +178,7 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
         cursor = session.cursor()
 
         # Verificar si el usuario ya existe por email
-        existing_user = crud.user.create_user(cursor=cursor, email=user_in.email)
+        existing_user = crud.user.get_user_by_email(cursor=cursor, email=user_in.email)
 
         if existing_user:
             raise HTTPException(
