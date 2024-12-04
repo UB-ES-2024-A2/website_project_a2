@@ -166,9 +166,9 @@ export default {
     }
   },
   mounted () {
-    const username = this.$store.getters.username
+    const token = this.$store.getters.token
 
-    if (username) {
+    if (token) {
       this.$router.push('/')
     }
   },
@@ -186,7 +186,7 @@ export default {
     async login_user () {
       AuthService.login(this.email, this.password)
         .then(res => {
-          this.$store.dispatch('setUser', { username: this.username })
+          this.$store.dispatch('setToken', { token: res.acces_token })
           this.$router.push({ name: 'HomePage' })
         })
         .catch((error) => {
