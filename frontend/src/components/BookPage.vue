@@ -118,7 +118,7 @@
                 <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
-                <button v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
+                <button id="editProfileBtn" v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
               </div>
             </div>
           </div>
@@ -150,11 +150,11 @@
               <input id="email" v-model="userForm.email" />
             </div>
 
-            <div v-if="errorList.length > 0" class="alert alert-danger">
+            <div id="alertBanner" v-if="errorList.length > 0" class="alert alert-danger">
                 <li v-for="err in errorList" :key="err">{{ err }}</li >
             </div>
 
-            <button type="submit" class="btn btn-success">Save</button>
+            <button id="submitBtnUser" type="submit" class="btn btn-success">Save</button>
             <button type="button" @click="toggleEdit" class="btn btn-secondary">Cancel</button>
           </form>
         </div>
