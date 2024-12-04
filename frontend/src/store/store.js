@@ -5,29 +5,36 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    username: localStorage.getItem('username') || '',
+    token: localStorage.getItem('token') || '',
     displayMode: localStorage.getItem('displayMode') || 'grid'
   },
   mutations: {
-    setUser (state, payload) {
-      state.username = payload.username
-      localStorage.setItem('username', payload.username)
+    setToken (state, payload) {
+      state.token = payload.token
+      localStorage.setItem('token', payload.token)
     },
     setDisplayMode (state, display) {
       state.displayMode = display
       localStorage.setItem('displayMode', display)
+    },
+    clearUser (state) {
+      state.token = ''
+      localStorage.removeItem('token')
     }
   },
   actions: {
-    setUser ({ commit }, payload) {
-      commit('setUser', payload)
+    setToken ({ commit }, payload) {
+      commit('setToken', payload)
     },
     setDisplayMode ({ commit }, display) {
       commit('setDisplayMode', display)
+    },
+    clearUser ({ commit }) {
+      commit('clearUser')
     }
   },
   getters: {
-    username: state => state.username,
+    token: state => state.token,
     displayMode: state => state.displayMode
   }
 })
