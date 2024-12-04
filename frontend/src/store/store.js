@@ -18,8 +18,8 @@ export default new Vuex.Store({
       localStorage.setItem('displayMode', display)
     },
     clearUser (state) {
-      state.username = ''
-      localStorage.removeItem('username')
+      state.token = ''
+      localStorage.removeItem('token')
     }
   },
   actions: {

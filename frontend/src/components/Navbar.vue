@@ -92,7 +92,7 @@
         <div class="tooltip-container">
             <span class="tooltip-text">Profile</span>
             <div class="btn profile-icon" @click="redirectToUserProfile">
-              <img loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
+              <img id="profileBtn" loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
             </div>
           </div>
         <div class="tooltip-container">
@@ -205,6 +205,10 @@ export default {
           this.currentUser = {}
         }
       }
+    },
+    logOut () {
+      this.$store.dispatch('clearUser')
+      this.$router.push('/')
     },
     redirectToUserProfile () {
       if (this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {

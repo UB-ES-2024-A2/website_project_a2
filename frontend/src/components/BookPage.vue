@@ -38,18 +38,18 @@
         <!-- Updated Comments section -->
         <div class="comments-section">
           <h2>Reader Reviews</h2>
-          <button @click="showReviewForm = true" class="leave-review-button">Leave a Review</button>
+          <button id="reviewBtn" @click="showReviewForm = true" class="leave-review-button">Leave a Review</button>
 
           <!-- Review Form -->
           <div v-if="showReviewForm" class="review-form">
             <h3>Write Your Review</h3>
             <div class="rating-input">
-              <span v-for="star in 5" :key="star" @click="newReview.rating = star" class="star-input" :class="{'star-filled': star <= newReview.rating}">★</span>
+              <span v-for="star in 5" :key="star" :id="'star-' + star" @click="newReview.rating = star" class="star-input" :class="{'star-filled': star <= newReview.rating}">★</span>
             </div>
-            <textarea v-model="newReview.comment" maxlength="250" placeholder="Write your review (max 250 characters)" class="review-textarea"></textarea>
+            <textarea id="reviewText" v-model="newReview.comment" maxlength="250" placeholder="Write your review (max 250 characters)" class="review-textarea"></textarea>
             <div class="char-count">{{ newReview.comment.length }}/250</div>
             <button @click="cancelReview" class="cancel-review-button">Cancel</button>
-            <button @click="submitReview" :disabled="!isReviewValid" class="submit-review-button">Submit Review</button>
+            <button id="submitReviewBtn" @click="submitReview" :disabled="!isReviewValid" class="submit-review-button">Submit Review</button>
             <div v-if="reviewError" class="error-message">{{ reviewError }}</div>
           </div>
 
@@ -71,7 +71,7 @@
                 </div>
               </div>
               <p class="comment-text">{{ comment.comment }}</p>
-              <button v-if="comment.user_id === userId" @click="showDeleteConfirmationModal(comment.id_comment_rating)" class="delete-comment-button">
+              <button id="deleteBtn" v-if="comment.user_id === currentUser.id_user" @click="showDeleteConfirmationModal(comment.id_comment_rating)" class="delete-comment-button">
                 <img src="@/assets/trashcan.svg" alt="Delete" class="trash-icon">
               </button>
             </div>
@@ -84,8 +84,8 @@
               <h3>Delete Review</h3>
               <p>Are you sure you want to delete this review?</p>
               <div class="modal-buttons">
-                <button @click="confirmDelete" class="confirm-button">Yes</button>
-                <button @click="cancelDelete" class="cancel-button">No</button>
+                <button id="confirmDelete" @click="confirmDelete" class="confirm-button">Yes</button>
+                <button id="cancelDelete" @click="cancelDelete" class="cancel-button">No</button>
               </div>
             </div>
           </div>
@@ -118,7 +118,7 @@
                 <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
-                <button v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn-edit">Edit Profile</button>
+                <button id="editProfileBtn" v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
               </div>
             </div>
           </div>
@@ -150,11 +150,11 @@
               <input id="email" v-model="userForm.email" />
             </div>
 
-            <div v-if="errorList.length > 0" class="alert alert-danger">
+            <div id="alertBanner" v-if="errorList.length > 0" class="alert alert-danger">
                 <li v-for="err in errorList" :key="err">{{ err }}</li >
             </div>
 
-            <button type="submit" class="btn btn-success">Save</button>
+            <button id="submitBtnUser" type="submit" class="btn btn-success">Save</button>
             <button type="button" @click="toggleEdit" class="btn btn-secondary">Cancel</button>
           </form>
         </div>
@@ -220,6 +220,7 @@ export default {
           }
           if (type === 'book' && id) {
             this.fetchBook(id)
+            this.fetchComments(id)
           }
         }
       },
@@ -258,7 +259,6 @@ export default {
           this.error = 'Failed to load book data'
           this.loading = false
         })
-      this.fetchComments(id)
     },
     fetchComments (id) {
       this.loadingComments = true
