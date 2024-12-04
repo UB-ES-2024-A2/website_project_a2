@@ -77,7 +77,7 @@
         </div>
     </div>
 
-      <div class="right-wrap" v-if="username !== ''">
+      <div class="right-wrap" v-if="token !== ''">
           <div class="tooltip-container">
             <span class="tooltip-text">Help</span>
             <div class="btn help-icon">
@@ -91,7 +91,7 @@
           </div>
         <div class="tooltip-container">
             <span class="tooltip-text">Profile</span>
-            <div class="btn profile-icon">
+            <div class="btn profile-icon" @click="redirectToUserProfile">
               <img loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
             </div>
           </div>
@@ -123,6 +123,7 @@ import Suggestions from '@/components/Suggestions'
 import BookService from '../services/BookService'
 import debounce from 'lodash/debounce'
 import UserService from '../services/UserService'
+import VueJwtDecode from 'vue-jwt-decode'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
@@ -153,11 +154,13 @@ export default {
       filteredSuggestionsBooks: [],
       errorMessages: [],
       showSuggestions: false,
-      isLoading: false
+      isLoading: false,
+      currentUser: null
     }
   },
   created () {
     this.debouncedFilter = debounce(this.filterSuggestions, 300)
+    this.getCurrentUser()
   },
   watch: {
     '$route.query': {
@@ -183,17 +186,41 @@ export default {
     }
   },
   computed: {
-    username () {
-      return this.$store.getters.username
+    token () {
+      return this.$store.getters.token
     },
     getShowSuggestions () {
       return this.showSuggestions
     }
   },
   methods: {
+    async getCurrentUser () {
+      if (this.token) {
+        try {
+          let decoded = VueJwtDecode.decode(this.token)
+          const response = await UserService.readUserById(decoded.sub)
+          this.currentUser = response.data
+        } catch (error) {
+          console.error('Error loading current user:', error)
+          this.currentUser = {}
+        }
+      }
+    },
     logOut () {
       this.$store.dispatch('clearUser')
       this.$router.push('/')
+    },
+    redirectToUserProfile () {
+      if (this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {
+        const searchParams = new URLSearchParams({
+          search: `${this.currentUser.name} ${this.currentUser.surname}`,
+          type: 'user',
+          id: this.currentUser.id_user
+        }).toString()
+        this.$router.push(`/?${searchParams}`)
+      } else {
+        console.error('Current user not available')
+      }
     },
     toggleSuggestions () {
       this.showSuggestions = true
@@ -207,9 +234,9 @@ export default {
         this.clearRoute()
       }
     },
-    setPageSearch (datos) {
+    setPageSearch () {
       if (this.actualPage !== PageEnum.SEARCH) {
-        this.$emit('search-selected', [datos, this.type])
+        this.$emit('search-selected', [this.textInput, this.type])
       }
     },
     setCategory (categorySearch) {
@@ -299,12 +326,10 @@ export default {
       this.filteredSuggestionsUsers = []
       this.filteredSuggestionsBooks = []
 
-      let datos = null
-
       if (this.type === 'book') {
         BookService.readBookById(this.id).then(response => {
-          datos = response.data
-          if (datos.title !== this.textInput) {
+          const book = response.data
+          if (book.title !== this.textInput) {
             this.$router.push('/not-found')
           }
         }).catch(error => {
@@ -313,8 +338,8 @@ export default {
         })
       } else if (this.type === 'user') {
         UserService.readUserById(this.id).then(response => {
-          datos = response.data
-          if (datos.name + ' ' + datos.surname !== this.textInput) {
+          const user = response.data
+          if (user.name + ' ' + user.surname !== this.textInput) {
             this.$router.push('/not-found')
           }
         }).catch(error => {
@@ -324,7 +349,7 @@ export default {
       }
 
       if (this.textInput.trim() !== '') {
-        this.setPageSearch(datos)
+        this.setPageSearch()
       }
     },
     hasSpecialCharacters (input) {

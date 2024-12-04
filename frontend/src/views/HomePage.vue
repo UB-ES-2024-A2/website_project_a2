@@ -241,8 +241,8 @@ export default {
     }
   },
   computed: {
-    username () {
-      return this.$store.getters.username
+    token () {
+      return this.$store.getters.token
     }
   },
   mounted () {

@@ -2,7 +2,7 @@
   <div class="view-as gradient-custom-header">
 
      <!-- Filter options -->
-      <div class="filter-options-wrap" v-if="username && currentTab !== 'book-page'">
+      <div class="filter-options-wrap" v-if="token && currentTab !== 'book-page'">
         <div class="filter-options" role="toolbar">
           <!-- All filter -->
           <Transition name="slide-up">
@@ -119,8 +119,8 @@ export default {
     view () {
       return this.$store.getters.displayMode
     },
-    username () {
-      return this.$store.getters.username
+    token () {
+      return this.$store.getters.token
     },
     getGenreViewButtons () {
       return Object.keys(this.genresList).filter(key => !this.genresList[key])
