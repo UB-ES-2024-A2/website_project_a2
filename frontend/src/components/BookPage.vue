@@ -57,7 +57,7 @@
             <div class="spinner"></div>
             <p>Loading comments...</p>
           </div>
-          <div v-if="comments && comments.length > 0" class="comments-list">
+          <div v-else-if="comments && comments.length > 0" class="comments-list">
             <div v-for="comment in comments" :key="comment.id_comment_rating" class="comment-card">
               <div class="comment-header">
                 <div class="user-info">
@@ -179,10 +179,15 @@ export default {
     },
     fetchComments (id) {
       this.loadingComments = true
+      this.comments = [] // Reset comments before fetching
       BookService.getCommentsRatings(id)
         .then(response => {
-          this.comments = response.data.comments
-          this.userComment = this.comments.find(comment => comment.user_id === this.currentUser.id_user)
+          if (response.data && Array.isArray(response.data.comments)) {
+            this.comments = response.data.comments
+          } else {
+            console.error('Unexpected response format:', response.data)
+            this.comments = []
+          }
           this.loadingComments = false
         })
         .catch(error => {
