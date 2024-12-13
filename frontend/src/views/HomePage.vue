@@ -36,13 +36,14 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FilterHeader from '@/components/FilterHeader'
 import CategoryTab from '@/components/CategoryTab'
+import Profile from '../components/Profile.vue'
 import BookService from '../services/BookService'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
   BOOK: 'book-page',
   CATEGORY: 'category',
-  PROFILE: 'Profile'
+  PROFILE: 'profile'
 })
 
 export default {
@@ -54,7 +55,8 @@ export default {
     'book-page': BookPage,
     'footer-tabs': Footer,
     'filter-header': FilterHeader,
-    'category': CategoryTab
+    'category': CategoryTab,
+    'profile': Profile
   },
 
   data () {
@@ -154,9 +156,6 @@ export default {
     },
     startSearch (data) {
       console.log('Searching for:', data)
-
-      // If a request is made to the API, it should be async
-      // Book example
       if (data[1] === 'book') {
         this.currentTab = PageEnum.BOOK
         this.searchResults = [
@@ -170,8 +169,7 @@ export default {
           }
         ]
       } else if (data[1] === 'user') {
-        this.currentTab = PageEnum.BOOK
-        // User example
+        this.currentTab = PageEnum.PROFILE
         this.searchResults = [
           {
             title: 'Search',
