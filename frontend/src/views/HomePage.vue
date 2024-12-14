@@ -10,7 +10,7 @@
                       @search-selected="startSearch"/>
 
         <library
-          :myBooksList="myBooksList[0].list"
+          :myBooksList="myBooksList"
           :loadingMyBooks="loadingMyBooks"
            @set-size="setSize"/>
 
@@ -67,10 +67,10 @@ export default {
     return {
       isLeftDragging: false,
       columnSizes: ['6rem', 'var(--dragbar-width)', 'auto'],
-      searchResults: null,
+      searchResults: [],
       currentTab: PageEnum.HOME,
       loading: true,
-      myBooksList: null,
+      myBooksList: [],
       loadingMyBooks: true
     }
   },
@@ -232,34 +232,36 @@ export default {
         this.searchResults = newSearchResults
       }
 
-      const myBooksNew = [
-        {
-          list: []
-        }
-      ]
-
-      BookService.readMyBooks(VueJwtDecode.decode(this.token).sub).then(response => {
-        const books = response.data.data
-        myBooksNew[0].list = books.map(book => ({
-          type: 'book',
-          data: {
-            title: book.title,
-            genres: book.genres || [],
-            image: book.image,
-            authors: book.authors || 'Unknown Author',
-            synopsis: book.synopsis || 'No synopsis available',
-            rating: book.rating || 0.0,
-            id: book.id_book
+      if (this.token) {
+        const myBooksNew = [
+          {
+            list: []
           }
-        }))
-        this.loadingMyBooks = false
-      })
-        .catch(error => {
-          console.error('Error loading books:', error)
+        ]
+
+        BookService.readMyBooks(VueJwtDecode.decode(this.token).sub).then(response => {
+          const books = response.data.data
+          myBooksNew[0].list = books.map(book => ({
+            type: 'book',
+            data: {
+              title: book.title,
+              genres: book.genres || [],
+              image: book.image,
+              authors: book.authors || 'Unknown Author',
+              synopsis: book.synopsis || 'No synopsis available',
+              rating: book.rating || 0.0,
+              id: book.id_book
+            }
+          }))
           this.loadingMyBooks = false
+          this.myBooksList = myBooksNew[0].list
         })
-      if (this.myBooksList !== myBooksNew) {
-        this.myBooksList = myBooksNew
+          .catch(error => {
+            console.error('Error loading books:', error)
+            this.loadingMyBooks = false
+          })
+      } else {
+        this.loadingMyBooks = false
       }
     },
     startCategory (data) {
