@@ -21,7 +21,9 @@
           <filter-header :searchResults="searchResults" :currentTab="currentTab" @genres-updated="handleGenresUpdate"/>
 
           <transition name="slide-fade" mode="out-in">
-            <component :is="currentTab" :searchResults="searchResults" :loading="loading"/>
+            <component :is="currentTab" :searchResults="searchResults" :loading="loading" :myBooksList="myBooksList"
+                        @update-my-books="setMyBooks"
+                        @updated-comments="readMyBooks"/>
           </transition>
 
           <footer-tabs/>
@@ -232,6 +234,36 @@ export default {
         this.searchResults = newSearchResults
       }
 
+      this.readMyBooks()
+    },
+    startCategory (data) {
+      if (this.currentTab !== PageEnum.CATEGORY) {
+        if (this.searchResults.length === 1) {
+          this.initializeSearchResults()
+        }
+        this.currentTab = PageEnum.CATEGORY
+        const newSearch = this.searchResults.find(column => column.title === data[0])
+        if (newSearch) {
+          this.searchResults = [newSearch]
+        }
+      }
+    },
+    setSize () {
+      let page = document.getElementById('page')
+      let leftCol = document.getElementById('leftcol')
+      if (!page || !leftCol) return
+
+      if (leftCol.clientWidth > 103) {
+        this.columnSizes = ['6rem', 'var(--dragbar-width)', 'auto']
+      } else {
+        this.columnSizes = ['20rem', 'var(--dragbar-width)', 'auto']
+      }
+      page.style.gridTemplateColumns = this.columnSizes.join(' ')
+    },
+    setMyBooks (data) {
+      this.myBooksList = data
+    },
+    async readMyBooks () {
       if (this.token) {
         const myBooksNew = [
           {
@@ -257,36 +289,13 @@ export default {
           this.myBooksList = myBooksNew[0].list
         })
           .catch(error => {
+            this.myBooksList = []
             console.error('Error loading books:', error)
             this.loadingMyBooks = false
           })
       } else {
         this.loadingMyBooks = false
       }
-    },
-    startCategory (data) {
-      if (this.currentTab !== PageEnum.CATEGORY) {
-        if (this.searchResults.length === 1) {
-          this.initializeSearchResults()
-        }
-        this.currentTab = PageEnum.CATEGORY
-        const newSearch = this.searchResults.find(column => column.title === data[0])
-        if (newSearch) {
-          this.searchResults = [newSearch]
-        }
-      }
-    },
-    setSize () {
-      let page = document.getElementById('page')
-      let leftCol = document.getElementById('leftcol')
-      if (!page || !leftCol) return
-
-      if (leftCol.clientWidth > 103) {
-        this.columnSizes = ['6rem', 'var(--dragbar-width)', 'auto']
-      } else {
-        this.columnSizes = ['20rem', 'var(--dragbar-width)', 'auto']
-      }
-      page.style.gridTemplateColumns = this.columnSizes.join(' ')
     }
   },
   computed: {
