@@ -217,7 +217,6 @@ export default {
     submitReview () {
       this.reviewError = null
       // Primero, verificamos si el usuario ya ha comentado
-      console.log(this.book)
       BookService.getCommentsRatings(this.book.id_book)
         .then(commentsResponse => {
           const comments = commentsResponse.data.comments || []

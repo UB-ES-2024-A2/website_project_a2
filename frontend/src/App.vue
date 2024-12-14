@@ -42,6 +42,7 @@ html, body {
   --reverse-background: white;
 
   --hover-dragbar-color: white;
+  --dropdown-backgroudn-color: #393939;
   --box-background-color: #282828;
   --box-border-color: rgba(255, 255, 255, 0.2);
   --title-header-library: #535151;
@@ -70,6 +71,7 @@ html, body {
   border-radius: 6px;
   padding: 5px;
   position: absolute;
+  white-space: nowrap;
   z-index: 1;
   top: 125%;
   left: 50%;
