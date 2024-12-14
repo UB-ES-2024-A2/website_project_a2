@@ -97,7 +97,7 @@
 
           <!-- Show the loader animation of the My Books -->
           <Transition name="slide-fade" mode="out-in">
-            <div v-if="getLoadingMyBooks">
+            <div v-if="getLoadingMyBooks" class="my-books-content">
               <place-holder :items="10"/>
             </div>
           </Transition>
@@ -320,12 +320,6 @@ export default {
   text-align: center;
 }
 
-.add-button-list {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-}
-
 .filter-header-my-books {
   grid-area: filter-header-my-books;
   display: flex;
@@ -476,10 +470,6 @@ export default {
     display: none !important;
   }
 
-  .add-button-list {
-    display: none !important;
-  }
-
   .my-books-wrap{
     padding-inline: 0 !important;
     grid-template-areas: 'my-books-content' !important;
@@ -494,6 +484,27 @@ export default {
 @media (max-width: 42.375rem) {
   .left-slider {
     margin: var(--panel-gap);
+  }
+
+  .library-title-header, .library-header, .filter-header-my-books{
+    display: none !important;
+  }
+.my-books-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--panel-gap);
+    overflow-y: hidden;
+    overflow-x: auto;
+    height: auto;
+  }
+
+  .my-books-content {
+    flex: 1;
+    display: block;
+    white-space: nowrap;
+    overflow-x: auto;
   }
 }
 

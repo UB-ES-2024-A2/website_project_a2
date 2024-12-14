@@ -68,7 +68,6 @@ def get_mybooks(session: SessionDep, id_user: int) -> Any:
 
         # Obtener información de cada libro utilizando id_book de mybook_out
         for mybook in mybook_out.data:
-            # Asumiendo que la función get_book_by_id devuelve un objeto con detalles del libro
             book_details = crud.book.get_book_by_id(cursor=cursor, book_id=mybook.id_book)
             if book_details:
                 books_data.append(book_details)

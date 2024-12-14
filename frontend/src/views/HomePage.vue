@@ -359,7 +359,7 @@ export default {
                          'left-slider left-slider left-slider'
                          'leftdragbar leftdragbar leftdragbar'
                          'tabs tabs tabs';
-    grid-template-rows: 5rem 6rem 0rem auto;
+    grid-template-rows: 5rem 15rem 0rem auto;
     grid-template-columns: auto;
   }
 
