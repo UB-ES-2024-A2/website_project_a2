@@ -7,7 +7,8 @@
                       :actualPage="currentTab"
                       @category-selected="startCategory"
                       @home-update="startHome"
-                      @search-selected="startSearch"/>
+                      @search-selected="startSearch"
+                      @info-selected="startInfo"/>
 
         <library />
 
@@ -37,12 +38,14 @@ import Footer from '@/components/Footer'
 import FilterHeader from '@/components/FilterHeader'
 import CategoryTab from '@/components/CategoryTab'
 import BookService from '../services/BookService'
+import Information from '@/components/Information'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
   BOOK: 'book-page',
   CATEGORY: 'category',
-  PROFILE: 'Profile'
+  PROFILE: 'Profile',
+  INFO: 'information'
 })
 
 export default {
@@ -54,7 +57,8 @@ export default {
     'book-page': BookPage,
     'footer-tabs': Footer,
     'filter-header': FilterHeader,
-    'category': CategoryTab
+    'category': CategoryTab,
+    'information': Information
   },
 
   data () {
@@ -238,6 +242,9 @@ export default {
           this.searchResults = [newSearch]
         }
       }
+    },
+    startInfo () {
+      this.currentTab = PageEnum.INFO
     }
   },
   computed: {
