@@ -45,7 +45,8 @@ export default {
   data () {
     return {
       maxItems: 0,
-      containerWidth: 0
+      containerWidth: 0,
+      resizeObserver: null
     }
   },
   components: {
@@ -90,10 +91,19 @@ export default {
   },
   mounted () {
     this.calculateMaxItems()
-    window.addEventListener('resize', this.calculateMaxItems)
+    const mainPageContainer = document.getElementById('main-page')
+    if (mainPageContainer) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.calculateMaxItems()
+      })
+
+      this.resizeObserver.observe(mainPageContainer)
+    }
   },
   beforeDestroy () {
-    window.removeEventListener('resize', this.calculateMaxItems)
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+    }
   }
 }
 </script>
