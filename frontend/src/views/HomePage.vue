@@ -9,7 +9,10 @@
                       @home-update="startHome"
                       @search-selected="startSearch"/>
 
-        <library />
+        <library
+          :myBooksList="myBooksList"
+          :loadingMyBooks="loadingMyBooks"
+           @set-size="setSize"/>
 
         <div id="leftdragbar" class="leftdragbar" @mousedown="StartLeftDrag"
                                                   @touchstart="StartLeftDrag"></div>
@@ -36,8 +39,9 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FilterHeader from '@/components/FilterHeader'
 import CategoryTab from '@/components/CategoryTab'
-import Profile from '../components/Profile.vue'
-import BookService from '../services/BookService'
+import Profile from '@/components/Profile'
+import BookService from '@/services/BookService'
+import VueJwtDecode from 'vue-jwt-decode'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
@@ -63,9 +67,11 @@ export default {
     return {
       isLeftDragging: false,
       columnSizes: ['6rem', 'var(--dragbar-width)', 'auto'],
-      searchResults: null,
+      searchResults: [],
       currentTab: PageEnum.HOME,
-      loading: true
+      loading: true,
+      myBooksList: [],
+      loadingMyBooks: true
     }
   },
   created () {
@@ -212,6 +218,7 @@ export default {
             image: book.image,
             authors: book.authors || 'Unknown Author',
             synopsis: book.synopsis || 'No synopsis available',
+            rating: book.rating || 0.0,
             id: book.id_book
           }
         }))
@@ -223,6 +230,38 @@ export default {
         })
       if (this.searchResults !== newSearchResults) {
         this.searchResults = newSearchResults
+      }
+
+      if (this.token) {
+        const myBooksNew = [
+          {
+            list: []
+          }
+        ]
+
+        BookService.readMyBooks(VueJwtDecode.decode(this.token).sub).then(response => {
+          const books = response.data.data
+          myBooksNew[0].list = books.map(book => ({
+            type: 'book',
+            data: {
+              title: book.title,
+              genres: book.genres || [],
+              image: book.image,
+              authors: book.authors || 'Unknown Author',
+              synopsis: book.synopsis || 'No synopsis available',
+              rating: book.rating || 0.0,
+              id: book.id_book
+            }
+          }))
+          this.loadingMyBooks = false
+          this.myBooksList = myBooksNew[0].list
+        })
+          .catch(error => {
+            console.error('Error loading books:', error)
+            this.loadingMyBooks = false
+          })
+      } else {
+        this.loadingMyBooks = false
       }
     },
     startCategory (data) {
@@ -236,6 +275,18 @@ export default {
           this.searchResults = [newSearch]
         }
       }
+    },
+    setSize () {
+      let page = document.getElementById('page')
+      let leftCol = document.getElementById('leftcol')
+      if (!page || !leftCol) return
+
+      if (leftCol.clientWidth > 103) {
+        this.columnSizes = ['6rem', 'var(--dragbar-width)', 'auto']
+      } else {
+        this.columnSizes = ['20rem', 'var(--dragbar-width)', 'auto']
+      }
+      page.style.gridTemplateColumns = this.columnSizes.join(' ')
     }
   },
   computed: {
@@ -280,6 +331,7 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: calc(var(--border-radius) * 2);
   overflow: auto;
+  overscroll-behavior-y: contain;
   grid-area: tabs;
   margin-left: calc(-1 * var(--panel-gap));
   display: grid;
@@ -307,7 +359,7 @@ export default {
                          'left-slider left-slider left-slider'
                          'leftdragbar leftdragbar leftdragbar'
                          'tabs tabs tabs';
-    grid-template-rows: 5rem 6rem 0rem auto;
+    grid-template-rows: 5rem 15rem 0rem auto;
     grid-template-columns: auto;
   }
 

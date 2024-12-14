@@ -210,7 +210,13 @@ export default {
     },
     logOut () {
       this.$store.dispatch('clearUser')
-      this.$router.push('/')
+      if (this.$route.path === '/') {
+        // Si la URL es la raíz, recarga la página
+        window.location.reload()
+      } else {
+        // Si no es la raíz, redirige a la página principal
+        this.$router.push('/')
+      }
     },
     redirectToUserProfile () {
       if (this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {

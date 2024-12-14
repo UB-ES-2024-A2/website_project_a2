@@ -23,3 +23,7 @@ class MyBookUpdate(SQLModel):
 # Properties to return via API
 class MyBookOut(MyBookBase):
     id_entry: int
+
+class MyBooksOut(SQLModel):
+    data: list[MyBookOut]
+    count: int

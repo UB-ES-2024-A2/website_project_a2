@@ -1,5 +1,5 @@
 """ MyBooks related CRUD methods """
-from app.models import MyBookCreate, MyBookOut
+from app.models import MyBookCreate, MyBookOut, MyBooksOut
 from typing import Any
 
 def create_mybook(*, cursor, mybook_in: MyBookCreate) -> MyBookOut:
@@ -54,7 +54,7 @@ def delete_user_book(*, cursor, id_user: int, id_book: int) -> bool:
     # Verifica si se eliminó alguna fila (es decir, si se encontró y eliminó la coincidencia)
     return cursor.rowcount > 0
 
-def get_mybooks(*, cursor, id_user: int, id_book: int) -> Any:
+def get_mybooks(*, cursor, id_user: int) -> Any:
     """
     Obtiene los libros de un usuario basado en el ID del usuario y el ID del libro.
 
@@ -69,20 +69,26 @@ def get_mybooks(*, cursor, id_user: int, id_book: int) -> Any:
     query_get_mybook = """
         SELECT id_entry, id_user, idBook
         FROM mybooks
-        WHERE id_user = %s AND idBook = %s
+        WHERE id_user = %s
     """
-    cursor.execute(query_get_mybook, (id_user, id_book))
+    cursor.execute(query_get_mybook, (id_user,))
 
-    # Recupera el primer resultado de la consulta
-    result = cursor.fetchone()
+    # Recupera todos los resultados de la consulta
+    result = cursor.fetchall()
+
+    # Contar el total de libros
+    count = len(result)
 
     if result:
-        mybook_out = MyBookOut(
-            id_entry=result[0],
-            id_user=result[1],
-            id_book=result[2]
-        )
-        return mybook_out
+        mybooks_out = [
+            MyBookOut(
+                id_entry=row[0],
+                id_user=row[1],
+                id_book=row[2]
+            ) for row in result
+        ]
+        # Devolver la respuesta en el formato esperado
+        return MyBooksOut(data=mybooks_out, count=count)
     else:
         return None
 
