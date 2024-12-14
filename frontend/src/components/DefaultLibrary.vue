@@ -24,8 +24,7 @@
         </header>
 
         <div class="my-books-wrap">
-          <!-- V-show si la lista no contine 0 elementos no mostramos ni busquedas ni ordenar -->
-          <div class="filter-header-my-books">
+          <div class="filter-header-my-books" v-show="getOriginalMyBooksList.length !== 0">
             <div class="search-my-books"  ref="inputSearchMyBook">
               <div class="search-my-books-icon" @click="setIsVisible">
                 <div class="tooltip-container" style="padding-inline: var(--panel-gap);">
@@ -175,6 +174,9 @@ export default {
     },
     getFilteredMyBooksList () {
       return this.filteredMyBooksList
+    },
+    getOriginalMyBooksList () {
+      return this.originalMyBooksList
     }
   },
   methods: {

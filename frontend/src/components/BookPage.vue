@@ -31,7 +31,27 @@
               <h2>Synopsis</h2>
               <p>{{ book.synopsis }}</p>
             </div>
-            <a :href="book.buy_link" target="_blank" rel="noopener noreferrer" class="buy-button">Buy Now</a>
+            <div class="btn-wrap">
+              <a :href="book.buy_link" target="_blank" rel="noopener noreferrer" class="buy-button">Buy Now</a>
+              <button class="addButton tooltip-container" :class="{
+                'red-background': isInMyBooks,
+                'gradient-custom': !isInMyBooks
+              }" @click="toggleMyBooks" :disabled="isProcessing || loadingMyBooks" >
+                <span v-if="!isInMyBooks" class="tooltip-text">Add to Library</span>
+                <span v-else class="tooltip-text">Remove from your Library</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  :style="{ transform: isInMyBooks ? 'rotate(30deg)' : 'rotate(0deg)' }"
+                >
+                  <path d="M6 1.5L6 6M6 6V10.5M6 6H10.5M6 6H1.5" stroke="#282828" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -119,11 +139,14 @@ export default {
       reviewError: null,
       showDeleteConfirmation: false,
       commentToDelete: null,
-      currentUser: null
+      currentUser: null,
+      isProcessing: false
     }
   },
   props: {
-    searchResults: Array
+    searchResults: Array,
+    myBooksList: Array,
+    loadingMyBooks: Boolean
   },
   watch: {
     '$route.query': {
@@ -150,6 +173,10 @@ export default {
     },
     isReviewValid () {
       return this.newReview.rating > 0 && this.newReview.comment.trim().length > 0
+    },
+    isInMyBooks () {
+      if (!this.myBooksList.length) return false
+      return this.myBooksList.some(item => item.data.id === this.book.id_book)
     }
   },
   created () {
@@ -208,6 +235,7 @@ export default {
           this.fetchComments(this.book.id_book)
           // Actualizar la información del libro (por si cambia el rating)
           this.fetchBook(this.book.id_book)
+          this.$emit('updated-comments')
         })
         .catch(error => {
           console.error('Error deleting comment:', error)
@@ -240,6 +268,7 @@ export default {
           this.newReview = {rating: 0, comment: ''}
           this.fetchComments(this.book.id_book)
           this.fetchBook(this.book.id_book)
+          this.$emit('updated-comments')
         })
         .catch(error => {
           console.error('Error submitting review:', error)
@@ -291,7 +320,45 @@ export default {
           this.currentUser = {}
         }
       }
+    },
+    async toggleMyBooks () {
+      if (!this.currentUser || !this.book) {
+        return
+      }
+      try {
+        this.isProcessing = true
+        let myBooks = null
+        if (this.isInMyBooks) {
+          console.log('todo')
+        } else {
+          // Si el libro no está en la lista "MyBooks", lo añadimos
+          await BookService.addBookToMyBooks(this.currentUser.id_user, this.book.id_book)
+          const newBook = {
+            type: 'book',
+            data: {
+              title: this.book.title,
+              genres: this.book.genres || [],
+              image: this.book.image,
+              authors: this.book.authors || 'Unknown Author',
+              synopsis: this.book.synopsis || 'No synopsis available',
+              rating: this.book.rating || 0.0,
+              id: this.book.id_book
+            }
+          }
+
+          // Añadir el libro modificado al array `myBooks`
+          myBooks = [...this.myBooksList]
+          myBooks.push(newBook)
+          this.$emit('update-my-books', myBooks)
+        }
+        // Actualizar la lista de "MyBooks" del usuario
+      } catch (error) {
+        console.error('Error toggling MyBooks:', error)
+      } finally {
+        this.isProcessing = false // Reactiva el botón al finalizar
+      }
     }
+
   }
 }
 
@@ -419,7 +486,6 @@ export default {
   text-decoration: none;
   font-weight: bold;
   transition: background-color 0.3s ease, transform 0.3s ease;
-  margin-top: var(--panel-gap);
 }
 
 .buy-button:hover {
@@ -669,6 +735,32 @@ h2 {
 
 .cancel-button:hover {
   background-color: var(--half-transparent-background);
+}
+
+.btn-wrap{
+  display: flex;
+  flex-direction: row;
+  gap: var(--panel-gap);
+  align-items: center;
+  margin-top: var(--panel-gap);
+}
+
+.addButton{
+  border: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: calc(var(--border-radius)* 2);
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.red-background{
+  background-color: rgba(255, 0, 0, 0.2);
+}
+
+.addButton svg {
+  transition: transform 0.3s ease;
 }
 
 @media (max-width: 768px) {
