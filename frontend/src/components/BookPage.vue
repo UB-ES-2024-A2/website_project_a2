@@ -329,7 +329,12 @@ export default {
         this.isProcessing = true
         let myBooks = null
         if (this.isInMyBooks) {
-          console.log('todo')
+          // Si el libro ya está en la lista "MyBooks", lo eliminamos
+          await BookService.deleteBookFromMyBooks(this.currentUser.id_user, this.book.id_book)
+          myBooks = this.myBooksList.filter(
+            (book) => book.data.id !== this.book.id_book
+          )
+          this.$emit('update-my-books', myBooks)
         } else {
           // Si el libro no está en la lista "MyBooks", lo añadimos
           await BookService.addBookToMyBooks(this.currentUser.id_user, this.book.id_book)
