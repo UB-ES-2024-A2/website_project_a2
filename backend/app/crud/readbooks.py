@@ -53,7 +53,7 @@ def delete_user_readbook(*, cursor, id_user: int, id_book: int) -> bool:
     # Check if any rows were affected (i.e., the entry was found and deleted)
     return cursor.rowcount > 0
 
-def get_readbook(*, cursor, id_user: int, id_book: int) -> Any:
+def get_readbook(*, cursor, id_user: int) -> Any:
     """
     Retrieves a book entry for a user based on the user ID and book ID.
 
@@ -68,19 +68,19 @@ def get_readbook(*, cursor, id_user: int, id_book: int) -> Any:
     query_get_readbook = """
         SELECT id_entry, id_user, idBook
         FROM readbooks
-        WHERE id_user = %s AND idBook = %s
+        WHERE id_user = %s
     """
-    cursor.execute(query_get_readbook, (id_user, id_book))
+    cursor.execute(query_get_readbook, (id_user, ))
 
-    # Retrieve the first result of the query
-    result = cursor.fetchone()
-
-    if result:
-        readbook_out = ReadBookOut(
+    results = cursor.fetchall()
+    if not results:
+        return []
+    readbooks_out = [
+        ReadBookOut(
             id_entry=result[0],
             id_user=result[1],
             id_book=result[2]
         )
-        return readbook_out
-    else:
-        return None
+        for result in results
+    ]
+    return readbooks_out
