@@ -129,6 +129,24 @@ class BookService {
         return Promise.reject(error)
       })
   }
+  myReadBooks (idUser) {
+    const config = {
+      headers: {
+        'accept': 'application/json'
+      }
+    }
+
+    const path = `/api/v1/readbooks/${idUser}`
+
+    return http.get(path, config)
+      .then((res) => {
+        console.log('aaa', res)
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
   deleteComment (commentId) {
     const config = {
       headers: {
@@ -139,48 +157,6 @@ class BookService {
     const path = `/api/v1/books/CommentRatingPerBook/${commentId}`
 
     return http.delete(path, config)
-      .then((res) => {
-        return res
-      })
-      .catch((error) => {
-        return Promise.reject(error)
-      })
-  }
-
-  deleteBookFromMyBooks (userId, bookId) {
-    const config = {
-      headers: {
-        'accept': 'application/json'
-      }
-    }
-
-    const path = `/api/v1/mybooks/mybooks/${userId}/${bookId}`
-
-    return http.delete(path, config)
-      .then((res) => {
-        return res
-      })
-      .catch((error) => {
-        return Promise.reject(error)
-      })
-  }
-
-  addBookToMyBooks (userId, bookId) {
-    const config = {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    }
-
-    const data = {
-      id_user: userId,
-      id_book: bookId
-    }
-
-    const path = '/api/v1/mybooks/mybooks'
-
-    return http.post(path, data, config)
       .then((res) => {
         return res
       })

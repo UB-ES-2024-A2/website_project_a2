@@ -12,9 +12,6 @@
         <div v-if="!isEditing">
           <div class="container mt-4">
             <div class="profile row">
-              <div class="col-md-8 d-flex flex-column">
-                <!-- <h2 class="book-title mb-4"></h2> -->
-              </div>
               <div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center">
                 <img
                   src="@/assets/user-black.svg"
@@ -25,7 +22,27 @@
                 <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
                 <p><strong>Username:</strong> {{ user.username }}</p>
                 <p><strong>Email:</strong> {{ user.email }}</p>
-                <button id="editProfileBtn" v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
+                <button id="editProfileBtn" v-if="user.id_user == currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
+              </div>
+              <div class="col-md-8">
+                <div class="read-books-section">
+                  <h3 class="read-books-title">{{ user.username }}'s Read Books</h3>
+                  <div v-if="loadingBooks" class="loading-books">
+                    <div class="spinner"></div>
+                    <p>Loading books...</p>
+                  </div>
+                  <div v-else-if="readBooks.length > 0">
+                    <ul class="read-books-list">
+                      <li v-for="book in readBooks" :key="book.id" class="read-book-item">
+                        <img :src="book.cover" :alt="book.title" class="book-cover">
+                        <span class="book-title">{{ book.title }}</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div v-else class="no-books-message">
+                    This user hasn't read any books yet.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -58,7 +75,7 @@
             </div>
 
             <div id="alertBanner" v-if="errorList.length > 0" class="alert alert-danger">
-                <li v-for="err in errorList" :key="err">{{ err }}</li >
+                <li v-for="err in errorList" :key="err">{{ err }}</li>
             </div>
 
             <button id="submitBtnUser" type="submit" class="btn btn-success">Save</button>
@@ -67,14 +84,15 @@
         </div>
       </div>
       <div v-else class="no-data">No user data available</div>
-  </div>
-
+    </div>
   </div>
 </template>
 
 <script>
 import UserService from '../services/UserService'
+import BookService from '../services/BookService'
 import VueJwtDecode from 'vue-jwt-decode'
+
 export default {
   name: 'Profile',
   data () {
@@ -92,7 +110,9 @@ export default {
         email: ''
       },
       isEditing: false,
-      errorList: []
+      errorList: [],
+      readBooks: [],
+      loadingBooks: false
     }
   },
   props: {
@@ -152,6 +172,7 @@ export default {
           this.user = response.data
           this.userForm = { ...this.user }
           this.loading = false
+          this.fetchReadBooks(id)
         })
         .catch((error) => {
           console.error('Error fetching user:', error)
@@ -188,6 +209,24 @@ export default {
           console.error('Error updating user:', error)
           this.errorList = ['Failed to update user data.']
         })
+    },
+    async fetchReadBooks (userId) {
+      this.loadingBooks = true
+      this.readBooks = [] // Limpiar el array antes de la petición
+      try {
+        const response = await BookService.myReadBooks(userId)
+        if (response.data && response.data.length > 0) {
+          this.readBooks = response.data.map(book => ({
+            id: book.id_book,
+            title: book.title,
+            cover: book.image
+          }))
+        }
+      } catch (error) {
+        console.error('Error fetching read books:', error)
+      } finally {
+        this.loadingBooks = false
+      }
     }
   }
 }
@@ -294,9 +333,96 @@ input {
   margin: 0 auto;
 }
 
+.read-books-section {
+  margin-top: 2rem;
+  background: var(--half-transparent-background);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+}
+
+.read-books-title {
+  font-size: var(--font-size-medium);
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+  text-align: left;
+  padding-left: 0.5rem;
+}
+
+.read-books-list {
+  list-style-type: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.read-book-item {
+  display: flex;
+  align-items: center;
+  background: var(--box-background-color);
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  width: calc(50% - 0.5rem);
+  transition: transform 0.2s ease-in-out;
+}
+
+.read-book-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover {
+  width: 50px;
+  height: 75px;
+  object-fit: cover;
+  margin-right: 1rem;
+  border-radius: calc(var(--border-radius) / 2);
+}
+
+.book-title {
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.no-books-message {
+  text-align: center;
+  padding: 2rem;
+  background: var(--box-background-color);
+  border-radius: var(--border-radius);
+  color: var(--text-color-secundary);
+}
+
+.loading-books {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.loading-books .spinner {
+  border: 4px solid var(--half-transparent-background);
+  border-top: 4px solid var(--purple-background);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--panel-gap);
+}
+
+.loading-books p {
+  color: var(--text-color-secundary);
+  font-size: var(--font-size-xs);
+}
+
 @media (max-width: 768px) {
   .profile {
     min-width: auto;
   }
+
+  .read-book-item {
+    width: 100%;
+  }
 }
+
 </style>
