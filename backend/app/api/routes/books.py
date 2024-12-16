@@ -298,3 +298,48 @@ def delete_comment(session: SessionDep, comment_id: int):
     finally:
         if session.is_connected():
             cursor.close()
+
+@router.get("/books/ratings/{idUser}")
+def get_books_ratings_by_user(
+        session: SessionDep,
+        idUser: int,
+        skip: int = 0,
+        limit: int = 100):
+    try:
+        cursor = session.cursor()
+
+        # Verificar que el usuario existe
+        if not crud.user.get_user_by_id(cursor=cursor, user_id=idUser):
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        # Obtener los libros y calificaciones del usuario
+        rows = crud.rating.get_books_with_ratings_by_user(cursor=cursor, user_id=idUser, skip=skip, limit=limit)
+
+        if not rows:
+            return {"message": "No ratings found for this user."}
+
+        # Crear lista de respuestas
+        books_data = [
+            {
+                "book": {
+                    "id_book": row["book"]["id_book"],
+                    "title": row["book"]["title"],
+                    "authors": row["book"]["authors"],
+                    "synopsis": row["book"]["synopsis"],
+                    "buy_link": row["book"]["buy_link"],
+                    "genres": row["book"]["genres"],
+                    "rating": float(row["book"]["rating"]) if row["book"]["rating"] else None,
+                    "editorial": row["book"]["editorial"],
+                    "comments": row["book"]["comments"],
+                    "publication_date": row["book"]["publication_date"],
+                    "image": row["book"]["image"]
+                },
+                "user_rating": row["user_rating"] if row["user_rating"] else None
+            }
+            for row in rows['data']
+        ]
+
+        return {"data": books_data, "count": len(books_data)}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
