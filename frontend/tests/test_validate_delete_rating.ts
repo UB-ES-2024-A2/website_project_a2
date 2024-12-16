@@ -37,7 +37,7 @@ describe('Delete Rating Test', function () {
       // Hacer clic en el enlace del libro
       const targetElement = await driver.wait(
         until.elementLocated(
-          By.css('a[href="/?search=To%20Kill%20a%20Mockingbird&type=book&id=1"]')
+          By.css('a[href*="FwAHExYESQsETjINCQpKFEc5MAgOEAoCBAgHCFIrEhUcWQcJDh5KHTtWVA%3D%3D"]')
         ),
         10000
       )
@@ -88,7 +88,7 @@ describe('Delete Rating Test', function () {
       await submitReviewBtnClick.click()
 
       // Esperar a que la página se recargue completamente
-      await driver.wait(until.urlIs('http://localhost:8080/?search=To%20Kill%20a%20Mockingbird&type=book&id=1'), 10000)
+      await driver.wait(until.urlIs('http://localhost:8080/?q=FwAHExYESQsETjINCQpKFEc5MAgOEAoCBAgHCFIrEhUcWQcJDh5KHTtWVA%3D%3D'), 10000)
 
       // Localizar el botón de eliminar comentario y hacer clic
       const deleteIcon = await driver.wait(
@@ -113,7 +113,7 @@ describe('Delete Rating Test', function () {
 
       // Esperar que la página se recargue y verificar que la URL sea la correcta
       await driver.wait(
-        until.urlIs('http://localhost:8080/?search=To%20Kill%20a%20Mockingbird&type=book&id=1'),
+        until.urlIs('http://localhost:8080/?q=FwAHExYESQsETjINCQpKFEc5MAgOEAoCBAgHCFIrEhUcWQcJDh5KHTtWVA%3D%3D'),
         10000
       )
 
