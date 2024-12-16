@@ -5,12 +5,13 @@
 
       <section class="about-section">
         <h2>Our Story</h2>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor.</p>
+        <p>We are  a group of students passionate about books and technology. We came together with a clear idea: to create a space where readers from all corners can discover, share, and enjoy the magic of reading.</p>
       </section>
 
       <section class="about-section">
         <h2>Our Mission</h2>
-        <p>Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor. Suspendisse dictum feugiat nisl ut dapibus. Mauris iaculis porttitor posuere.</p>
+        <p>Our website is more than just a book catalog; it’s a community that connects stories with people. We believe that every book has the power to inspire, teach, and transform, and our goal is to bring that power closer to those who seek it.
+          As students, we know how important it is to have access to good resources, and with this project, we want to do our part to foster a love for reading. Thank you for being part of this adventure with us!</p>
       </section>
 
       <section class="about-section">
@@ -23,12 +24,13 @@
           </div>
         </div>
       </section>
-
+      <!--
       <section class="about-section">
         <h2>Contact Us</h2>
         <p>Have any questions? We'd love to hear from you!</p>
         <button class="contact-button">Get in Touch</button>
       </section>
+      -->
     </div>
   </div>
 </template>
@@ -39,10 +41,12 @@ export default {
   data () {
     return {
       teamMembers: [
-        { name: 'Jane Doe', role: 'Founder & CEO', avatar: '/placeholder.svg?height=150&width=150' },
-        { name: 'John Smith', role: 'CTO', avatar: '/placeholder.svg?height=150&width=150' },
-        { name: 'Alice Johnson', role: 'Lead Designer', avatar: '/placeholder.svg?height=150&width=150' },
-        { name: 'Bob Brown', role: 'Lead Developer', avatar: '/placeholder.svg?height=150&width=150' }
+        { name: 'Adria Alfonso', role: 'Developer', avatar: '/placeholder.svg?height=150&width=150' },
+        { name: 'Albert Meliksetyan', role: 'Developer', avatar: '/placeholder.svg?height=150&width=150' },
+        { name: 'Eloi Busquets', role: 'Developer', avatar: '/placeholder.svg?height=150&width=150' },
+        { name: 'Hlieb Sydorenko', role: 'Developer', avatar: '/placeholder.svg?height=150&width=150' },
+        { name: 'Marta Bernadas', role: 'Developer', avatar: '/placeholder.svg?height=150&width=150' },
+        { name: 'Nacho Rivera', role: 'Developer', avatar: '/placeholder.svg?height=150&width=150' }
       ]
     }
   }
@@ -63,6 +67,7 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   animation: fadeIn 0.5s ease-out;
+  width: 40%;
 }
 
 @keyframes fadeIn {

@@ -2,7 +2,7 @@
   <div class="view-as gradient-custom-header">
 
      <!-- Filter options -->
-      <div class="filter-options-wrap" v-if="token && currentTab !== 'book-page'">
+      <div class="filter-options-wrap" v-if="token && currentTab !== 'book-page' && currentTab !== 'profile' && currentTab !== 'information'">
         <div class="filter-options" role="toolbar">
           <!-- All filter -->
           <Transition name="slide-up">
@@ -49,7 +49,7 @@
       </div>
 
       <!-- Toogle View: Grid, List and Compact -->
-      <div class="toggle-wrap" v-if="currentTab !== 'book-page'">
+      <div class="toggle-wrap" v-if="currentTab !== 'book-page' && currentTab !== 'profile' && currentTab !== 'information'">
         <input type="radio" id="toggle1" name="toggle" class="toggleCheckbox" @click="setView('grid')" :checked="view === 'grid'"/>
         <input type="radio" id="toggle2" name="toggle" class="toggleCheckbox" @click="setView('list')" :checked="view === 'list'"/>
         <input type="radio" id="toggle3" name="toggle" class="toggleCheckbox" @click="setView('compact')" :checked="view === 'compact'"/>
