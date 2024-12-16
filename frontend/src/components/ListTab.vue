@@ -28,6 +28,7 @@
 
 <script>
 import {genreColors} from '@/assets/genresColors'
+import { encode } from '../../utils/encoding.js'
 
 export default {
   name: 'ListTab',
@@ -41,9 +42,14 @@ export default {
         type: item.type,
         id: item.data.id
       }
-
+      // Convertir el objeto a una cadena de consulta
       const queryString = new URLSearchParams(newQuery).toString()
-      return `${this.$route.path}?${queryString}`
+
+      // Codificar la cadena de consulta
+      const encodedQuery = encode(queryString)
+
+      // Retornar la URL codificada
+      return `${this.$route.path}?q=${encodedQuery}`
     },
     getGenreColor (genre) {
       return genreColors[genre.trim()] || '#d1cff8'
