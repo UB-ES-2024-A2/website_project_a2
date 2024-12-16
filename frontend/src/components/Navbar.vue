@@ -78,10 +78,9 @@
     </div>
 
       <div class="right-wrap" v-if="token !== ''">
-          <!--
           <div class="tooltip-container">
-            <span class="tooltip-text">Help</span>
-            <div class="btn help-icon">
+            <span class="tooltip-text">About Us</span>
+            <div class="btn help-icon" @click="setPageInfo">
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M18.18 18C18.6502 16.6633 19.5783 15.5362 20.7999 14.8183C22.0215 14.1003 23.4578 13.8379
               24.8544 14.0774C26.2509 14.317 27.5176 15.043 28.4302 16.1271C29.3427 17.2111 29.8421 18.583 29.84
@@ -90,7 +89,6 @@
               </svg>
             </div>
           </div>
-          -->
         <div class="tooltip-container">
             <span class="tooltip-text">Profile</span>
             <div class="btn profile-icon" @click="redirectToUserProfile">
@@ -131,7 +129,8 @@ const PageEnum = Object.freeze({
   HOME: 'default',
   SEARCH: 'book-page',
   CATEGORY: 'category',
-  PROFILE: 'Profile'
+  PROFILE: 'profile',
+  INFO: 'information'
 })
 
 const CategoryEnum = Object.freeze({
@@ -239,6 +238,11 @@ export default {
     setPageSearch () {
       if (this.actualPage !== PageEnum.SEARCH) {
         this.$emit('search-selected', [this.textInput, this.type])
+      }
+    },
+    setPageInfo () {
+      if (this.actualPage !== PageEnum.INFO) {
+        this.$emit('info-selected')
       }
     },
     setCategory (categorySearch) {
