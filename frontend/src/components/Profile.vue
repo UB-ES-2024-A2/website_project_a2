@@ -48,8 +48,7 @@
                     />
                     Show stats
                   </button>
-
-                <button id="editProfileBtn" v-if="user.id_user == currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
+                </div>
               </div>
               <div class="col-md-8">
                 <div class="read-books-section">
@@ -69,7 +68,6 @@
                   <div v-else class="no-books-message">
                     This user hasn't read any books yet.
                   </div>
-
                 </div>
               </div>
             </div>
@@ -114,80 +112,79 @@
       <div v-else class="no-data">No user data available</div>
     </div>
 
-<div v-if="showStatsModal" class="modal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <!-- Encapçalament -->
-      <div class="modal-header">
-        <div v-if="currentChartIndex === 0">
-          <h5 class="modal-title">User Rating Distribution</h5>
-        </div>
-        <div v-if="currentChartIndex === 1">
-          <h5 class="modal-title">Most read genres</h5>
-        </div>
-        <div v-if="currentChartIndex === 2">
-          <h5 class="modal-title">Average scores by gender</h5>
-        </div>
-      </div>
+    <div v-if="showStatsModal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <!-- Encapçalament -->
+          <div class="modal-header">
+            <div v-if="currentChartIndex === 0">
+              <h5 class="modal-title">User Rating Distribution</h5>
+            </div>
+            <div v-if="currentChartIndex === 1">
+              <h5 class="modal-title">Most read genres</h5>
+            </div>
+            <div v-if="currentChartIndex === 2">
+              <h5 class="modal-title">Average scores by gender</h5>
+            </div>
+          </div>
 
-      <!-- Contingut del modal -->
-      <div class="modal-body">
-        <!-- Contenidor de la gràfica -->
-        <div class="chart-container">
-          <!-- Mostrar gràfica segons l'índex -->
-          <div v-if="currentChartIndex === 0 && booksRatings">
-            <BarChart :chart-data="chartData1" :options="chartOptions1" />
+          <!-- Contingut del modal -->
+          <div class="modal-body">
+            <!-- Contenidor de la gràfica -->
+            <div class="chart-container">
+              <!-- Mostrar gràfica segons l'índex -->
+              <div v-if="currentChartIndex === 0 && booksRatings">
+                <BarChart :chart-data="chartData1" :options="chartOptions1" />
+              </div>
+              <div v-if="currentChartIndex === 0 && !booksRatings">
+                <p>This user has not rated any book</p>
+              </div>
+              <div v-if="currentChartIndex === 1 && readBooks">
+                <PieChart :chart-data="chartData" :options="chartOptions" />
+              </div>
+              <div v-if="currentChartIndex === 1 && !readBooks">
+                <p>This user has no books marked as read</p>
+              </div>
+              <div v-if="currentChartIndex === 2 && booksRatings">
+                <BarChart :chart-data="chartData2" :options="chartOptions2" />
+              </div>
+              <div v-if="currentChartIndex === 2 && !booksRatings">
+                <p>This user has not rated any book</p>
+              </div>
+            </div>
           </div>
-          <div v-if="currentChartIndex === 0 && !booksRatings">
-            <p>This user has not rated any book</p>
-          </div>
-          <div v-if="currentChartIndex === 1 && readBooks">
-            <PieChart :chart-data="chartData" :options="chartOptions" />
-          </div>
-          <div v-if="currentChartIndex === 1 && !readBooks">
-            <p>This user has no books marked as read</p>
-          </div>
-          <div v-if="currentChartIndex === 2 && booksRatings">
-            <BarChart :chart-data="chartData2" :options="chartOptions2" />
-          </div>
-          <div v-if="currentChartIndex === 2 && !booksRatings">
-            <p>This user has not rated any book</p>
+
+          <!-- Peu de pàgina amb botons -->
+          <div class="modal-footer d-flex justify-content-between align-items-center">
+            <!-- Botons de navegació -->
+            <div class="navigation-buttons">
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="prevChart"
+                :disabled="currentChartIndex === 0"
+              >
+                &larr; Previous
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="nextChart"
+                :disabled="currentChartIndex === charts.length - 1"
+              >
+                Following &rarr;
+              </button>
+            </div>
+
+            <!-- Botó de tancar -->
+            <button type="button" class="btn btn-secondary" @click="toggleStatsModal">
+              Close
+            </button>
           </div>
         </div>
-      </div>
-
-      <!-- Peu de pàgina amb botons -->
-      <div class="modal-footer d-flex justify-content-between align-items-center">
-        <!-- Botons de navegació -->
-        <div class="navigation-buttons">
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="prevChart"
-            :disabled="currentChartIndex === 0"
-          >
-            &larr; Previous
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="nextChart"
-            :disabled="currentChartIndex === charts.length - 1"
-          >
-            Following &rarr;
-          </button>
-        </div>
-
-        <!-- Botó de tancar -->
-        <button type="button" class="btn btn-secondary" @click="toggleStatsModal">
-          Close
-        </button>
       </div>
     </div>
   </div>
-</div>
-  </div>
-  
 </template>
 
 <script>
@@ -209,7 +206,6 @@ export default {
     return {
       charts: ['BarChart', 'PieChart', 'BarChart'],
       currentChartIndex: 0,
-      readBooks: null,
       booksRatings: null,
       chartData2: {},
       chartData1: {},
@@ -467,7 +463,6 @@ export default {
           this.getMyReadBooks(this.user.id_user)
 
           this.fetchReadBooks(id)
-
         })
         .catch((error) => {
           console.error('Error fetching user:', error)

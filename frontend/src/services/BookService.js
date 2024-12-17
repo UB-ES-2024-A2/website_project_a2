@@ -204,23 +204,7 @@ class BookService {
         return Promise.reject(error)
       })
   }
-  myReadBooks (idUser) {
-    const config = {
-      headers: {
-        'accept': 'application/json'
-      }
-    }
 
-    const path = `/api/v1/readbooks/${idUser}`
-
-    return http.get(path, config)
-      .then((res) => {
-        return res
-      })
-      .catch((error) => {
-        return Promise.reject(error)
-      })
-  }
   myRatings (idUser) {
     const config = {
       headers: {
@@ -238,7 +222,6 @@ class BookService {
         return Promise.reject(error)
       })
   }
-  
 
   addBookToReadBooks (userId, bookId) {
     const config = {
