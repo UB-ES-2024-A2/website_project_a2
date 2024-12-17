@@ -164,7 +164,40 @@ class BookService {
         return Promise.reject(error)
       })
   }
+  myReadBooks (idUser) {
+    const config = {
+      headers: {
+        'accept': 'application/json'
+      }
+    }
 
+    const path = `/api/v1/readbooks/${idUser}`
+
+    return http.get(path, config)
+      .then((res) => {
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
+  myRatings (idUser) {
+    const config = {
+      headers: {
+        'accept': 'application/json'
+      }
+    }
+
+    const path = `/api/v1/books/books/ratings/${idUser}`
+
+    return http.get(path, config)
+      .then((res) => {
+        return res
+      })
+      .catch((error) => {
+        return Promise.reject(error)
+      })
+  }
   addBookToMyBooks (userId, bookId) {
     const config = {
       headers: {
