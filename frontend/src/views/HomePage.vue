@@ -49,7 +49,6 @@ import Profile from '@/components/Profile'
 import BookService from '@/services/BookService'
 import VueJwtDecode from 'vue-jwt-decode'
 
-
 const PageEnum = Object.freeze({
   HOME: 'default',
   BOOK: 'book-page',
@@ -69,7 +68,7 @@ export default {
     'footer-tabs': Footer,
     'filter-header': FilterHeader,
     'category': CategoryTab,
-    'information': Information
+    'information': Information,
     'profile': Profile
 
   },
@@ -259,6 +258,7 @@ export default {
     },
     startInfo () {
       this.currentTab = PageEnum.INFO
+    },
     setSize () {
       let page = document.getElementById('page')
       let leftCol = document.getElementById('leftcol')
