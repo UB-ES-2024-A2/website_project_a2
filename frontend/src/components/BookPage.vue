@@ -121,6 +121,71 @@
       </div>
       <div v-else class="no-data">No book data available</div>
     </div>
+    <div v-else>
+      <div v-if="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading user information...</p>
+      </div>
+      <div v-else-if="error" class="error">
+        <p>{{ error }}</p>
+      </div>
+      <div v-else-if="user" class="book-content">
+        <div v-if="!isEditing">
+          <div class="container mt-4">
+            <div class="profile row">
+              <div class="col-md-12 d-flex flex-column align-items-center justify-content-center text-center">
+                <img
+                  src="@/assets/user-black.svg"
+                  alt="User Photo"
+                  class="img-fluid rounded-circle shadow"
+                  style="width: 150px; height: 150px;"
+                />
+                <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <button id="editProfileBtn" v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else>
+          <form @submit.prevent="updateUser">
+            <div style="justify-content: center; align-items: center;">
+              <img
+                src="@/assets/user-black.svg"
+                alt="User Photo"
+                class="img-fluid rounded-circle shadow"
+                style="width: 90px; height: 90px;"
+              />
+            </div>
+            <div>
+              <label for="name">Name</label>
+              <input id="name" v-model="userForm.name" />
+            </div>
+            <div>
+              <label for="surname">Surname</label>
+              <input id="surname" v-model="userForm.surname" />
+            </div>
+            <div>
+              <label for="username">Username</label>
+              <input id="username" v-model="userForm.username" />
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" v-model="userForm.email" />
+            </div>
+
+            <div id="alertBanner" v-if="errorList.length > 0" class="alert alert-danger">
+                <li v-for="err in errorList" :key="err">{{ err }}</li >
+            </div>
+
+            <button id="submitBtnUser" type="submit" class="btn btn-success">Save</button>
+            <button type="button" @click="toggleEdit" class="btn btn-secondary">Cancel</button>
+          </form>
+        </div>
+      </div>
+      <div v-else class="no-data">No user data available</div>
+  </div>
   </div>
 </template>
 
