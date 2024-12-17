@@ -186,6 +186,7 @@
       </div>
       <div v-else class="no-data">No user data available</div>
   </div>
+  </div>
 </template>
 
 <script>
