@@ -31,7 +31,27 @@
               <h2>Synopsis</h2>
               <p>{{ book.synopsis }}</p>
             </div>
-            <a :href="book.buy_link" target="_blank" rel="noopener noreferrer" class="buy-button">Buy Now</a>
+            <div class="btn-wrap">
+              <a :href="book.buy_link" target="_blank" rel="noopener noreferrer" class="buy-button">Buy Now</a>
+              <button class="addButton tooltip-container" :class="{
+                'red-background': isInMyBooks,
+                'gradient-custom': !isInMyBooks
+              }" @click="toggleMyBooks" :disabled="isProcessing || loadingMyBooks" >
+                <span v-if="!isInMyBooks" class="tooltip-text">Add to Library</span>
+                <span v-else class="tooltip-text">Remove from your Library</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  :style="{ transform: isInMyBooks ? 'rotate(30deg)' : 'rotate(0deg)' }"
+                >
+                  <path d="M6 1.5L6 6M6 6V10.5M6 6H10.5M6 6H1.5" stroke="#282828" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -57,7 +77,7 @@
             <div class="spinner"></div>
             <p>Loading comments...</p>
           </div>
-          <div v-if="comments && comments.length > 0" class="comments-list">
+          <div v-else-if="comments && comments.length > 0" class="comments-list">
             <div v-for="comment in comments" :key="comment.id_comment_rating" class="comment-card">
               <div class="comment-header">
                 <div class="user-info">
@@ -93,75 +113,6 @@
       </div>
       <div v-else class="no-data">No book data available</div>
     </div>
-    <div v-else>
-      <div v-if="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Loading user information...</p>
-      </div>
-      <div v-else-if="error" class="error">
-        <p>{{ error }}</p>
-      </div>
-      <div v-else-if="user" class="book-content">
-        <div v-if="!isEditing">
-          <div class="container mt-4">
-            <div class="profile row">
-              <div class="col-md-8 d-flex flex-column">
-                <!-- <h2 class="book-title mb-4"></h2> -->
-              </div>
-              <div class="col-md-4 d-flex flex-column align-items-center justify-content-center text-center">
-                <img
-                  src="@/assets/user-black.svg"
-                  alt="User Photo"
-                  class="img-fluid rounded-circle shadow"
-                  style="width: 150px; height: 150px;"
-                />
-                <p><strong>Name:</strong> {{ user.name }} {{ user.surname }}</p>
-                <p><strong>Username:</strong> {{ user.username }}</p>
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <button id="editProfileBtn" v-if="user.id_user==currentUser.id_user" @click="toggleEdit" class="btn btn-edit">Edit Profile</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-else>
-          <form @submit.prevent="updateUser">
-            <div style="justify-content: center; align-items: center;">
-              <img
-                src="@/assets/user-black.svg"
-                alt="User Photo"
-                class="img-fluid rounded-circle shadow"
-                style="width: 90px; height: 90px;"
-              />
-            </div>
-            <div>
-              <label for="name">Name</label>
-              <input id="name" v-model="userForm.name" />
-            </div>
-            <div>
-              <label for="surname">Surname</label>
-              <input id="surname" v-model="userForm.surname" />
-            </div>
-            <div>
-              <label for="username">Username</label>
-              <input id="username" v-model="userForm.username" />
-            </div>
-            <div>
-              <label for="email">Email</label>
-              <input id="email" v-model="userForm.email" />
-            </div>
-
-            <div id="alertBanner" v-if="errorList.length > 0" class="alert alert-danger">
-                <li v-for="err in errorList" :key="err">{{ err }}</li >
-            </div>
-
-            <button id="submitBtnUser" type="submit" class="btn btn-success">Save</button>
-            <button type="button" @click="toggleEdit" class="btn btn-secondary">Cancel</button>
-          </form>
-        </div>
-      </div>
-      <div v-else class="no-data">No user data available</div>
-  </div>
-
   </div>
 </template>
 
@@ -169,6 +120,8 @@
 import BookService from '../services/BookService'
 import UserService from '../services/UserService'
 import VueJwtDecode from 'vue-jwt-decode'
+import { decode } from '../../utils/encoding.js'
+
 export default {
   name: 'BookPage',
   data () {
@@ -186,38 +139,34 @@ export default {
         comment: ''
       },
       reviewError: null,
-      userId: null,
-      userComment: null,
       showDeleteConfirmation: false,
       commentToDelete: null,
-      user: null,
       currentUser: null,
-      userForm: {
-        name: '',
-        surname: '',
-        username: '',
-        email: ''
-      },
-      isEditing: false,
-      errorList: []
+      isProcessing: false
     }
   },
   props: {
-    searchResults: Array
+    searchResults: Array,
+    myBooksList: Array,
+    loadingMyBooks: Boolean
   },
   watch: {
     '$route.query': {
       handler () {
-        let textInput = this.$route.query.search || ''
-        let type = this.$route.query.type || ''
-        let id = this.$route.query.id || ''
+        // Decodificar el parámetro de la URL
+        const decodedQuery = decode(this.$route.query.q || '')
+
+        // Usar URLSearchParams para obtener los valores de los parámetros
+        const queryParams = new URLSearchParams(decodedQuery)
+
+        // Asignar los valores a las variables locales
+        let textInput = queryParams.get('search') || ''
+        let type = queryParams.get('type') || ''
+        let id = queryParams.get('id') || ''
 
         if (textInput !== '' && type !== '') {
           this.textInput = textInput
           this.type = type
-          if (type === 'user' && id) {
-            this.fetchUsers(id)
-          }
           if (type === 'book' && id) {
             this.fetchBook(id)
             this.fetchComments(id)
@@ -233,6 +182,10 @@ export default {
     },
     isReviewValid () {
       return this.newReview.rating > 0 && this.newReview.comment.trim().length > 0
+    },
+    isInMyBooks () {
+      if (!this.myBooksList.length) return false
+      return this.myBooksList.some(item => item.data.id === this.book.id_book)
     }
   },
   created () {
@@ -262,10 +215,15 @@ export default {
     },
     fetchComments (id) {
       this.loadingComments = true
+      this.comments = [] // Reset comments before fetching
       BookService.getCommentsRatings(id)
         .then(response => {
-          this.comments = response.data.comments
-          this.userComment = this.comments.find(comment => comment.user_id === this.currentUser.id_user)
+          if (response.data && Array.isArray(response.data.comments)) {
+            this.comments = response.data.comments
+          } else {
+            console.error('Unexpected response format:', response.data)
+            this.comments = []
+          }
           this.loadingComments = false
         })
         .catch(error => {
@@ -286,6 +244,7 @@ export default {
           this.fetchComments(this.book.id_book)
           // Actualizar la información del libro (por si cambia el rating)
           this.fetchBook(this.book.id_book)
+          this.$emit('updated-comments')
         })
         .catch(error => {
           console.error('Error deleting comment:', error)
@@ -295,7 +254,6 @@ export default {
     submitReview () {
       this.reviewError = null
       // Primero, verificamos si el usuario ya ha comentado
-      console.log(this.book)
       BookService.getCommentsRatings(this.book.id_book)
         .then(commentsResponse => {
           const comments = commentsResponse.data.comments || []
@@ -319,6 +277,7 @@ export default {
           this.newReview = {rating: 0, comment: ''}
           this.fetchComments(this.book.id_book)
           this.fetchBook(this.book.id_book)
+          this.$emit('updated-comments')
         })
         .catch(error => {
           console.error('Error submitting review:', error)
@@ -341,7 +300,6 @@ export default {
       this.commentToDelete = commentId
       this.showDeleteConfirmation = true
     },
-
     confirmDelete () {
       if (this.commentToDelete) {
         BookService.deleteComment(this.commentToDelete)
@@ -356,7 +314,6 @@ export default {
           })
       }
     },
-
     cancelDelete () {
       this.showDeleteConfirmation = false
       this.commentToDelete = null
@@ -373,179 +330,54 @@ export default {
         }
       }
     },
-    fetchUsers (id) {
-      this.loading = true
-      this.error = null
-      UserService.readUserById(id)
-        .then((response) => {
-          this.user = response.data
-          this.userForm = { ...this.user }
-          this.loading = false
-        })
-        .catch((error) => {
-          console.error('Error fetching user:', error)
-          this.error = 'Failed to load user data'
-          this.loading = false
-        })
-    },
-    toggleEdit () {
-      this.isEditing = !this.isEditing
-    },
-    validateUser () {
-      this.errorList = []
-      if (!this.userForm.name.trim()) this.errorList.push('Name is required.')
-      if (!this.userForm.surname.trim()) this.errorList.push('Surname is required.')
-      if (!this.userForm.username.trim()) this.errorList.push('Username is required.')
-      if (!this.userForm.email.trim()) {
-        this.errorList.push('Email is required.')
-      } else if (!/\S+@\S+\.\S+/.test(this.userForm.email)) {
-        this.errorList.push('Invalid email format.')
-      }
-
-      return this.errorList.length === 0
-    },
-    updateUser () {
-      if (!this.validateUser()) {
+    async toggleMyBooks () {
+      if (!this.currentUser || !this.book) {
         return
       }
-      UserService.updateUser(this.currentUser.id_user, this.userForm)
-        .then(() => {
-          this.user = { ...this.userForm }
-          this.isEditing = false
-        })
-        .catch((error) => {
-          console.error('Error updating user:', error)
-          this.errorList = ['Failed to update user data.']
-        })
+      try {
+        this.isProcessing = true
+        let myBooks = null
+        if (this.isInMyBooks) {
+          // Si el libro ya está en la lista "MyBooks", lo eliminamos
+          await BookService.deleteBookFromMyBooks(this.currentUser.id_user, this.book.id_book)
+          myBooks = this.myBooksList.filter(
+            (book) => book.data.id !== this.book.id_book
+          )
+          this.$emit('update-my-books', myBooks)
+        } else {
+          // Si el libro no está en la lista "MyBooks", lo añadimos
+          await BookService.addBookToMyBooks(this.currentUser.id_user, this.book.id_book)
+          const newBook = {
+            type: 'book',
+            data: {
+              title: this.book.title,
+              genres: this.book.genres || [],
+              image: this.book.image,
+              authors: this.book.authors || 'Unknown Author',
+              synopsis: this.book.synopsis || 'No synopsis available',
+              rating: this.book.rating || 0.0,
+              id: this.book.id_book
+            }
+          }
+
+          // Añadir el libro modificado al array `myBooks`
+          myBooks = [...this.myBooksList]
+          myBooks.push(newBook)
+          this.$emit('update-my-books', myBooks)
+        }
+        // Actualizar la lista de "MyBooks" del usuario
+      } catch (error) {
+        console.error('Error toggling MyBooks:', error)
+      } finally {
+        this.isProcessing = false // Reactiva el botón al finalizar
+      }
     }
+
   }
 }
+
 </script>
 <style scoped>
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 50%;
-  width: 100%;
-  margin: 0 auto;
-}
-
-input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.main-page {
-  grid-area: main-page;
-  padding: calc(var(--panel-gap) * 2);
-  background-color: var(--box-background-color);
-  color: var(--text-color);
-  border-radius: calc(var(--border-radius) * 2);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.loading,
-.error,
-.no-data {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  font-size: var(--font-size-medium);
-}
-
-.spinner {
-  border: 4px solid var(--half-transparent-background);
-  border-top: 4px solid var(--purple-background);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: var(--panel-gap);
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.book-content {
-  animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.profile {
-  background-color: var(--half-transparent-background);
-  padding: calc(var(--panel-gap) * 2);
-  border-radius: var(--border-radius);
-  margin-top: var(--panel-gap);
-  min-height: 60vh;
-  min-width: 150vh;
-}
-
-.alert-danger {
-    background-color: rgba(255, 0, 0, 0.2);
-  border: 0.063rem solid red;
-  color: white;
-  padding: 0.625rem;
-  border-radius: 50.313rem;
-  margin-top: 1.25rem;
-  list-style-type: none
-}
-
-.alert-danger ul {
-  margin: 0;
-  padding-left: 1.5rem;
-}
-
-h2 {
-  font-size: var(--font-size-medium);
-  margin-bottom: var(--panel-gap);
-  color: var(--purple-background);
-}
-
-@media (max-width: 768px) {
-  .book-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .book-info {
-    align-items: center;
-  }
-
-  .buy-button {
-    align-self: center;
-  }
-}
-.btn-edit{
-  margin-right: var(--panel-gap);
-  font-weight: 700;
-  color: var(--text-color);
-  width: 9rem;
-  height: 3rem;
-  transition: transform 0.3s ease-in-out;
-  border-radius: calc(var(--border-radius) * 2);
-  background: var(--purple-background);
-
-}
 .main-page {
   grid-area: main-page;
   padding: calc(var(--panel-gap) * 2);
@@ -580,12 +412,8 @@ h2 {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .book-content {
@@ -593,12 +421,8 @@ h2 {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .book-header {
@@ -676,7 +500,6 @@ h2 {
   text-decoration: none;
   font-weight: bold;
   transition: background-color 0.3s ease, transform 0.3s ease;
-  margin-top: var(--panel-gap);
 }
 
 .buy-button:hover {
@@ -690,7 +513,6 @@ h2 {
   color: var(--purple-background);
 }
 
-/* Updated styles for comments section */
 .comments-section {
   margin-top: calc(var(--panel-gap));
 }
@@ -735,11 +557,6 @@ h2 {
   font-weight: bold;
   color: var(--text-color);
   margin-right: calc(var(--panel-gap) / 2);
-}
-
-.stars {
-  display: inline-flex;
-  align-items: center;
 }
 
 .comment-text {
@@ -816,9 +633,7 @@ h2 {
   margin-top: calc(var(--panel-gap) / 2);
 }
 
-.submit-review-button {
-  background-color: var(--purple-background);
-  color: var(--text-color);
+.submit-review-button, .cancel-review-button {
   padding: var(--panel-gap) calc(var(--panel-gap) * 2);
   border-radius: calc(var(--border-radius) * 2);
   border: none;
@@ -826,6 +641,11 @@ h2 {
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
   margin-top: var(--panel-gap);
+}
+
+.submit-review-button {
+  background-color: var(--purple-background);
+  color: var(--text-color);
 }
 
 .submit-review-button:hover:not(:disabled) {
@@ -838,28 +658,21 @@ h2 {
   cursor: not-allowed;
 }
 
-.error-message {
-  color: #ff4d4d;
-  margin-top: var(--panel-gap);
-  font-size: var(--font-size-xs);
-}
-
 .cancel-review-button {
   background-color: var(--text-color-secundary);
   color: var(--text-color);
-  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
-  border-radius: calc(var(--border-radius) * 2);
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  margin-top: var(--panel-gap);
   margin-right: var(--panel-gap);
 }
 
 .cancel-review-button:hover {
   background-color: var(--half-transparent-background);
   transform: translateY(-2px);
+}
+
+.error-message {
+  color: #ff4d4d;
+  margin-top: var(--panel-gap);
+  font-size: var(--font-size-xs);
 }
 
 .delete-comment-button {
@@ -880,7 +693,7 @@ h2 {
 .trash-icon {
   width: 1.5rem;
   height: 1.5rem;
-  fill: white; /* Updated fill color */
+  fill: white;
 }
 
 .delete-confirmation-modal {
@@ -912,14 +725,17 @@ h2 {
   margin-top: calc(var(--panel-gap) * 2);
 }
 
+.confirm-button, .cancel-button {
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: var(--border-radius);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
 .confirm-button {
   background-color: #ff4d4d;
   color: white;
-  border: none;
-  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
 .confirm-button:hover {
@@ -929,15 +745,36 @@ h2 {
 .cancel-button {
   background-color: var(--text-color-secundary);
   color: white;
-  border: none;
-  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
 .cancel-button:hover {
   background-color: var(--half-transparent-background);
+}
+
+.btn-wrap{
+  display: flex;
+  flex-direction: row;
+  gap: var(--panel-gap);
+  align-items: center;
+  margin-top: var(--panel-gap);
+}
+
+.addButton{
+  border: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: calc(var(--border-radius)* 2);
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.red-background{
+  background-color: rgba(255, 0, 0, 0.2);
+}
+
+.addButton svg {
+  transition: transform 0.3s ease;
 }
 
 @media (max-width: 768px) {

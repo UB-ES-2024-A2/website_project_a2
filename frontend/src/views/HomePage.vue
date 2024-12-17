@@ -10,7 +10,10 @@
                       @search-selected="startSearch"
                       @info-selected="startInfo"/>
 
-        <library />
+        <library
+          :myBooksList="myBooksList"
+          :loadingMyBooks="loadingMyBooks"
+           @set-size="setSize"/>
 
         <div id="leftdragbar" class="leftdragbar" @mousedown="StartLeftDrag"
                                                   @touchstart="StartLeftDrag"></div>
@@ -19,7 +22,9 @@
           <filter-header :searchResults="searchResults" :currentTab="currentTab" @genres-updated="handleGenresUpdate"/>
 
           <transition name="slide-fade" mode="out-in">
-            <component :is="currentTab" :searchResults="searchResults" :loading="loading"/>
+            <component :is="currentTab" :searchResults="searchResults" :loading="loading" :myBooksList="myBooksList"
+                        @update-my-books="setMyBooks"
+                        @updated-comments="readMyBooks"/>
           </transition>
 
           <footer-tabs/>
@@ -37,8 +42,13 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FilterHeader from '@/components/FilterHeader'
 import CategoryTab from '@/components/CategoryTab'
-import BookService from '../services/BookService'
+
 import Information from '@/components/Information'
+
+import Profile from '@/components/Profile'
+import BookService from '@/services/BookService'
+import VueJwtDecode from 'vue-jwt-decode'
+
 
 const PageEnum = Object.freeze({
   HOME: 'default',
@@ -46,6 +56,7 @@ const PageEnum = Object.freeze({
   CATEGORY: 'category',
   PROFILE: 'Profile',
   INFO: 'information'
+
 })
 
 export default {
@@ -59,15 +70,19 @@ export default {
     'filter-header': FilterHeader,
     'category': CategoryTab,
     'information': Information
+    'profile': Profile
+
   },
 
   data () {
     return {
       isLeftDragging: false,
       columnSizes: ['6rem', 'var(--dragbar-width)', 'auto'],
-      searchResults: null,
+      searchResults: [],
       currentTab: PageEnum.HOME,
-      loading: true
+      loading: true,
+      myBooksList: [],
+      loadingMyBooks: true
     }
   },
   created () {
@@ -158,9 +173,6 @@ export default {
     },
     startSearch (data) {
       console.log('Searching for:', data)
-
-      // If a request is made to the API, it should be async
-      // Book example
       if (data[1] === 'book') {
         this.currentTab = PageEnum.BOOK
         this.searchResults = [
@@ -174,8 +186,7 @@ export default {
           }
         ]
       } else if (data[1] === 'user') {
-        this.currentTab = PageEnum.BOOK
-        // User example
+        this.currentTab = PageEnum.PROFILE
         this.searchResults = [
           {
             title: 'Search',
@@ -218,6 +229,7 @@ export default {
             image: book.image,
             authors: book.authors || 'Unknown Author',
             synopsis: book.synopsis || 'No synopsis available',
+            rating: book.rating || 0.0,
             id: book.id_book
           }
         }))
@@ -230,6 +242,8 @@ export default {
       if (this.searchResults !== newSearchResults) {
         this.searchResults = newSearchResults
       }
+
+      this.readMyBooks()
     },
     startCategory (data) {
       if (this.currentTab !== PageEnum.CATEGORY) {
@@ -245,6 +259,54 @@ export default {
     },
     startInfo () {
       this.currentTab = PageEnum.INFO
+    setSize () {
+      let page = document.getElementById('page')
+      let leftCol = document.getElementById('leftcol')
+      if (!page || !leftCol) return
+
+      if (leftCol.clientWidth > 103) {
+        this.columnSizes = ['6rem', 'var(--dragbar-width)', 'auto']
+      } else {
+        this.columnSizes = ['20rem', 'var(--dragbar-width)', 'auto']
+      }
+      page.style.gridTemplateColumns = this.columnSizes.join(' ')
+    },
+    setMyBooks (data) {
+      this.myBooksList = data
+    },
+    async readMyBooks () {
+      if (this.token) {
+        const myBooksNew = [
+          {
+            list: []
+          }
+        ]
+
+        BookService.readMyBooks(VueJwtDecode.decode(this.token).sub).then(response => {
+          const books = response.data.data
+          myBooksNew[0].list = books.map(book => ({
+            type: 'book',
+            data: {
+              title: book.title,
+              genres: book.genres || [],
+              image: book.image,
+              authors: book.authors || 'Unknown Author',
+              synopsis: book.synopsis || 'No synopsis available',
+              rating: book.rating || 0.0,
+              id: book.id_book
+            }
+          }))
+          this.loadingMyBooks = false
+          this.myBooksList = myBooksNew[0].list
+        })
+          .catch(error => {
+            this.myBooksList = []
+            console.error('Error loading books:', error)
+            this.loadingMyBooks = false
+          })
+      } else {
+        this.loadingMyBooks = false
+      }
     }
   },
   computed: {
@@ -289,6 +351,7 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: calc(var(--border-radius) * 2);
   overflow: auto;
+  overscroll-behavior-y: contain;
   grid-area: tabs;
   margin-left: calc(-1 * var(--panel-gap));
   display: grid;
@@ -316,7 +379,7 @@ export default {
                          'left-slider left-slider left-slider'
                          'leftdragbar leftdragbar leftdragbar'
                          'tabs tabs tabs';
-    grid-template-rows: 5rem 6rem 0rem auto;
+    grid-template-rows: 5rem 15rem 0rem auto;
     grid-template-columns: auto;
   }
 

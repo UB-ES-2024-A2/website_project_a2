@@ -17,7 +17,7 @@
 import { encode } from '../../utils/encoding.js'
 
 export default {
-  name: 'GridTab',
+  name: 'GridLibrary',
   props: {
     column: Array
   },
@@ -43,10 +43,11 @@ export default {
 <style scoped>
 .options-content{
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, 5rem);
   gap: 1rem;
   align-items: center;
   padding-block: var(--panel-gap);
+  padding-left: calc(var(--panel-gap)/2);
 }
 
 .btn{
@@ -71,7 +72,7 @@ export default {
 }
 
 .image{
-  height: 17rem;
+  height: 8rem;
   border-radius: var(--border-radius);
   box-shadow: 0 0 0.5rem var(--half-transparent-main-background);
 }

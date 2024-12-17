@@ -89,12 +89,14 @@
               </svg>
             </div>
           </div>
-        <div class="tooltip-container">
+        <router-link :to="redirectToUserProfile()" id="profileBtn">
+          <div class="tooltip-container">
             <span class="tooltip-text">Profile</span>
-            <div class="btn profile-icon" @click="redirectToUserProfile">
-              <img id="profileBtn" loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
+            <div class="btn profile-icon">
+              <img loading="lazy" src="@/assets/user-black.svg" alt="Profile Picture" style="height: 75%">
             </div>
           </div>
+        </router-link>
         <div class="tooltip-container">
           <span class="tooltip-text">Logout</span>
           <div class="btn help-icon">
@@ -124,6 +126,7 @@ import BookService from '../services/BookService'
 import debounce from 'lodash/debounce'
 import UserService from '../services/UserService'
 import VueJwtDecode from 'vue-jwt-decode'
+import { decode, encode } from '../../utils/encoding.js'
 
 const PageEnum = Object.freeze({
   HOME: 'default',
@@ -166,10 +169,18 @@ export default {
   watch: {
     '$route.query': {
       handler () {
-        this.textInput = this.$route.query.search || ''
-        this.type = this.$route.query.type || ''
-        this.id = this.$route.query.id || ''
-        const categorySearch = this.$route.query.category || ''
+        // Decodificar el parámetro de la URL
+        const decodedQuery = decode(this.$route.query.q || '')
+
+        // Usar URLSearchParams para obtener los valores de los parámetros
+        const queryParams = new URLSearchParams(decodedQuery)
+
+        // Asignar los valores a las variables locales
+        this.textInput = queryParams.get('search') || ''
+        this.type = queryParams.get('type') || ''
+        this.id = queryParams.get('id') || ''
+        const categorySearch = queryParams.get('category') || ''
+
         if (this.textInput !== '' && this.type !== '' && this.id !== '') {
           this.startSearch()
         } else if (categorySearch !== '' && this.type !== '') {
@@ -209,18 +220,32 @@ export default {
     },
     logOut () {
       this.$store.dispatch('clearUser')
-      this.$router.push('/')
+      if (this.$route.path === '/') {
+        // Si la URL es la raíz, recarga la página
+        window.location.reload()
+      } else {
+        // Si no es la raíz, redirige a la página principal
+        this.$router.push('/')
+      }
     },
     redirectToUserProfile () {
-      if (this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {
-        const searchParams = new URLSearchParams({
+      if (this.currentUser && this.currentUser.name && this.currentUser.surname && this.currentUser.id_user) {
+        const newQuery = {
           search: `${this.currentUser.name} ${this.currentUser.surname}`,
           type: 'user',
           id: this.currentUser.id_user
-        }).toString()
-        this.$router.push(`/?${searchParams}`)
+        }
+
+        // Convertir el objeto a una cadena de consulta
+        const queryString = new URLSearchParams(newQuery).toString()
+
+        // Codificar la cadena de consulta
+        const encodedQuery = encode(queryString)
+
+        // Retornar la URL codificada
+        return `${this.$route.path}?q=${encodedQuery}`
       } else {
-        console.error('Current user not available')
+        return ''
       }
     },
     toggleSuggestions () {
