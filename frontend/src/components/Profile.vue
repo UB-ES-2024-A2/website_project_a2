@@ -93,6 +93,8 @@ import UserService from '../services/UserService'
 import BookService from '../services/BookService'
 import VueJwtDecode from 'vue-jwt-decode'
 
+import { decode } from '../../utils/encoding.js'
+
 export default {
   name: 'Profile',
   data () {
@@ -121,9 +123,16 @@ export default {
   watch: {
     '$route.query': {
       handler () {
-        let textInput = this.$route.query.search || ''
-        let type = this.$route.query.type || ''
-        let id = this.$route.query.id || ''
+        // Decodificar el parámetro de la URL
+        const decodedQuery = decode(this.$route.query.q || '')
+
+        // Usar URLSearchParams para obtener los valores de los parámetros
+        const queryParams = new URLSearchParams(decodedQuery)
+
+        // Asignar los valores a las variables locales
+        let textInput = queryParams.get('search') || ''
+        let type = queryParams.get('type') || ''
+        let id = queryParams.get('id') || ''
 
         if (textInput !== '' && type !== '') {
           this.textInput = textInput

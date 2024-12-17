@@ -104,11 +104,14 @@
           <Transition name="slide-fade" mode="out-in">
             <div v-if="getFilteredMyBooksList.length" class="my-books-content">
                 <grid :column="getFilteredMyBooksList"/>
-              </div>
-              <div v-else-if="!getLoadingMyBooks" class="no-books-message">
+            </div>
+            <div v-else-if="!getLoadingMyBooks && !specialCharacters" class="no-books-message">
                 No books found in Your Library.
-              </div>
+            </div>
           </Transition>
+          <div v-show="specialCharacters" class="no-books-message">
+              No special characters allowed
+          </div>
         </div>
       </nav>
     </div>
@@ -152,7 +155,8 @@ export default {
       currentIcon: IconEnum.ALPHABETICAL,
       iconDropDown: false,
       originalMyBooksList: [],
-      filteredMyBooksList: []
+      filteredMyBooksList: [],
+      specialCharacters: false
     }
   },
   components: {
@@ -218,9 +222,16 @@ export default {
       this.$emit('set-size')
     },
     filterSuggestions () {
+      if (this.specialCharacters) this.specialCharacters = false
       if (this.searchQuery.trim() === '') {
         this.filteredMyBooksList = this.originalMyBooksList
       } else {
+        if (this.hasSpecialCharacters(this.searchQuery.trim())) {
+          this.filteredMyBooksList = []
+          this.specialCharacters = true
+          this.isLoading = false
+          return
+        }
         this.filteredMyBooksList = this.originalMyBooksList.filter(book =>
           book.data.title.toLowerCase().includes(this.searchQuery.toLowerCase())
         )
@@ -235,6 +246,10 @@ export default {
         this.filteredMyBooksList.sort((a, b) => b.data.rating - a.data.rating)
       }
       this.isLoading = false
+    },
+    hasSpecialCharacters (input) {
+      const specialCharactersRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚüçÜ0-9]+( +[a-zA-ZñÑáéíóúÁÉÍÓÚüçÜ0-9]+)*$/
+      return !specialCharactersRegex.test(input)
     }
   },
   created () {
