@@ -37,7 +37,7 @@ describe('Display Book Test', function () {
       // Hacer clic en el enlace del libro
       const targetElement = await driver.wait(
         until.elementLocated(
-          By.css('a[href="/?search=To%20Kill%20a%20Mockingbird&type=book&id=1"]')
+          By.css('a[href*="FwAHExYESQsETjINCQpKFEc5MAgOEAoCBAgHCFIrEhUcWQcJDh5KHTtWVA%3D%3D"]')
         ),
         10000
       )

@@ -79,7 +79,7 @@ jobs:
           PROJECT_NAME: "ReadHub"
           FIRST_SUPERUSER: "admin"
           FIRST_SUPERUSER_PASSWORD: "admin123"
-
+          VUE_APP_ENCODING_SECRET_KEY: ${{ secrets.VUE_APP_ENCODING_SECRET_KEY }}
         run: |
           cd frontend
           npm run test

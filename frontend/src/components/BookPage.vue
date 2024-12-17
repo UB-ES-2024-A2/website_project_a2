@@ -50,6 +50,14 @@
                   <path d="M6 1.5L6 6M6 6V10.5M6 6H10.5M6 6H1.5" stroke="#282828" stroke-width="4" stroke-linecap="round"/>
                 </svg>
               </button>
+              <button
+                @click="toggleReadBooks"
+                class="read-books-button"
+                :class="{ 'in-readbooks': isInReadBooks }"
+                :disabled="isProcessing2"
+              >
+                {{ isInReadBooks ? 'Remove from Finished' : 'Add to Finished' }}
+              </button>
             </div>
 
           </div>
@@ -120,6 +128,8 @@
 import BookService from '../services/BookService'
 import UserService from '../services/UserService'
 import VueJwtDecode from 'vue-jwt-decode'
+import { decode } from '../../utils/encoding.js'
+
 export default {
   name: 'BookPage',
   data () {
@@ -140,7 +150,9 @@ export default {
       showDeleteConfirmation: false,
       commentToDelete: null,
       currentUser: null,
-      isProcessing: false
+      isProcessing: false,
+      isInReadBooks: false,
+      isProcessing2: false
     }
   },
   props: {
@@ -151,9 +163,16 @@ export default {
   watch: {
     '$route.query': {
       handler () {
-        let textInput = this.$route.query.search || ''
-        let type = this.$route.query.type || ''
-        let id = this.$route.query.id || ''
+        // Decodificar el parámetro de la URL
+        const decodedQuery = decode(this.$route.query.q || '')
+
+        // Usar URLSearchParams para obtener los valores de los parámetros
+        const queryParams = new URLSearchParams(decodedQuery)
+
+        // Asignar los valores a las variables locales
+        let textInput = queryParams.get('search') || ''
+        let type = queryParams.get('type') || ''
+        let id = queryParams.get('id') || ''
 
         if (textInput !== '' && type !== '') {
           this.textInput = textInput
@@ -187,6 +206,10 @@ export default {
 
     if (!token) {
       this.$router.push('/login')
+    } else {
+      this.getCurrentUser().then(() => {
+        this.checkReadBooksStatus()
+      })
     }
   },
   methods: {
@@ -362,8 +385,46 @@ export default {
       } finally {
         this.isProcessing = false // Reactiva el botón al finalizar
       }
-    }
+    },
+    async toggleReadBooks () {
+      if (!this.currentUser || !this.book) {
+        console.error('User not logged in or book not loaded')
+        return
+      }
 
+      this.isProcessing2 = true
+
+      try {
+        if (this.isInReadBooks) {
+          await BookService.deleteBookFromReadBooks(this.currentUser.id_user, this.book.id_book)
+          this.isInReadBooks = false
+          console.log('Book removed from Read Books')
+        } else {
+          await BookService.addBookToReadBooks(this.currentUser.id_user, this.book.id_book)
+          this.isInReadBooks = true
+          console.log('Book added to Read Books')
+        }
+        // Refresh the read books status after the operation
+        await this.checkReadBooksStatus()
+      } catch (error) {
+        console.error('Error toggling read books status:', error)
+        // Optionally, add user feedback here (e.g., this.$toast.error('Failed to update read books'))
+      } finally {
+        this.isProcessing2 = false
+      }
+    },
+    async checkReadBooksStatus () {
+      if (!this.currentUser || !this.book) return
+
+      try {
+        const response = await BookService.myReadBooks(this.currentUser.id_user)
+        this.isInReadBooks = response.data.some(item => item.id_book === this.book.id_book)
+        console.log('Read Books status:', this.isInReadBooks)
+      } catch (error) {
+        console.error('Error checking read books status:', error)
+        this.isInReadBooks = false // Assume not in read books if there's an error
+      }
+    }
   }
 }
 
@@ -403,8 +464,12 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .book-content {
@@ -412,8 +477,12 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .book-header {
@@ -742,7 +811,7 @@ h2 {
   background-color: var(--half-transparent-background);
 }
 
-.btn-wrap{
+.btn-wrap {
   display: flex;
   flex-direction: row;
   gap: var(--panel-gap);
@@ -750,22 +819,46 @@ h2 {
   margin-top: var(--panel-gap);
 }
 
-.addButton{
+.addButton {
   border: 0;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: calc(var(--border-radius)* 2);
+  border-radius: calc(var(--border-radius) * 2);
   align-items: center;
   display: flex;
   justify-content: center;
 }
 
-.red-background{
+.red-background {
   background-color: rgba(255, 0, 0, 0.2);
 }
 
 .addButton svg {
   transition: transform 0.3s ease;
+}
+
+.read-books-button {
+  background-color: var(--purple-background);
+  color: var(--text-color);
+  padding: var(--panel-gap) calc(var(--panel-gap) * 2);
+  border-radius: calc(var(--border-radius) * 2);
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.read-books-button:hover {
+  background-color: var(--blue-background);
+  transform: translateY(-2px);
+}
+
+.read-books-button.in-readbooks {
+  background-color: var(--text-color-secundary);
+}
+
+.read-books-button.in-readbooks:hover {
+  background-color: var(--half-transparent-background);
 }
 
 @media (max-width: 768px) {

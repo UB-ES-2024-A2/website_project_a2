@@ -43,7 +43,7 @@ describe('Profile Test', function () {
       )
       await profileButton.click()
 
-      await driver.get('http://localhost:8080/?search=Fernando%20Lopez&type=user&id=131')
+      await driver.get('http://localhost:8080/?q=FwAHExYESRkOFxcFCwIOXiAbLw4fXxAcFgRIGQc6GUMQAFhXUkQ%3D')
 
       // Click the Edit Profile button
       const editProfileButton = await driver.wait(
