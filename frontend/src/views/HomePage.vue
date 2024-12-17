@@ -7,7 +7,8 @@
                       :actualPage="currentTab"
                       @category-selected="startCategory"
                       @home-update="startHome"
-                      @search-selected="startSearch"/>
+                      @search-selected="startSearch"
+                      @info-selected="startInfo"/>
 
         <library
           :myBooksList="myBooksList"
@@ -41,15 +42,21 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FilterHeader from '@/components/FilterHeader'
 import CategoryTab from '@/components/CategoryTab'
+
+import Information from '@/components/Information'
+
 import Profile from '@/components/Profile'
 import BookService from '@/services/BookService'
 import VueJwtDecode from 'vue-jwt-decode'
+
 
 const PageEnum = Object.freeze({
   HOME: 'default',
   BOOK: 'book-page',
   CATEGORY: 'category',
-  PROFILE: 'profile'
+  PROFILE: 'Profile',
+  INFO: 'information'
+
 })
 
 export default {
@@ -62,7 +69,9 @@ export default {
     'footer-tabs': Footer,
     'filter-header': FilterHeader,
     'category': CategoryTab,
+    'information': Information
     'profile': Profile
+
   },
 
   data () {
@@ -248,6 +257,8 @@ export default {
         }
       }
     },
+    startInfo () {
+      this.currentTab = PageEnum.INFO
     setSize () {
       let page = document.getElementById('page')
       let leftCol = document.getElementById('leftcol')
