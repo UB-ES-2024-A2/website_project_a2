@@ -2,11 +2,13 @@ from typing import Any, List
 from fastapi import APIRouter, HTTPException
 import mysql.connector
 
-from app.models import ReadBookCreate, ReadBookOut,BookOut
+from app.models import ReadBookCreate, ReadBookOut, BookOut
+
 from app.api.deps import SessionDep
 from app import crud
 
 router = APIRouter()
+
 
 @router.post("/readbooks", response_model=ReadBookOut)
 def create_readbook(session: SessionDep, readbook_in: ReadBookCreate) -> Any:
@@ -28,6 +30,7 @@ def create_readbook(session: SessionDep, readbook_in: ReadBookCreate) -> Any:
         if session.is_connected():
             cursor.close()
 
+
 @router.delete("/readbooks/{id_user}/{id_book}", response_model=bool)
 def delete_user_readbook(session: SessionDep, id_user: int, id_book: int) -> Any:
     """
@@ -36,7 +39,7 @@ def delete_user_readbook(session: SessionDep, id_user: int, id_book: int) -> Any
     try:
         cursor = session.cursor()
         success = crud.readbooks.delete_user_readbook(cursor=cursor, id_user=id_user, id_book=id_book)
-        
+
         if not success:
             raise HTTPException(status_code=404, detail="Entry not found")
 
@@ -50,6 +53,7 @@ def delete_user_readbook(session: SessionDep, id_user: int, id_book: int) -> Any
     finally:
         if session.is_connected():
             cursor.close()
+
 @router.get("/{id_user}", response_model=List[BookOut])
 def get_readbook(session: SessionDep, id_user: int) -> Any:
     """
