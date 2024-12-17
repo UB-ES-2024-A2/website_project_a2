@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 import mysql.connector
 
 from app.models import ReadBookCreate, ReadBookOut, BookOut
+
 from app.api.deps import SessionDep
 from app import crud
 
@@ -52,7 +53,6 @@ def delete_user_readbook(session: SessionDep, id_user: int, id_book: int) -> Any
     finally:
         if session.is_connected():
             cursor.close()
-
 
 @router.get("/{id_user}", response_model=List[BookOut])
 def get_readbook(session: SessionDep, id_user: int) -> Any:
