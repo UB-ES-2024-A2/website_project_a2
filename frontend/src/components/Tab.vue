@@ -35,6 +35,7 @@ import CompactTab from '@/components/CompactTab'
 import GridPlaceHolder from '@/components/GridPlaceHolder'
 import ListPlaceHolder from '@/components/ListPlaceHolder'
 import CompactPlaceHolder from '@/components/CompactPlaceHolder'
+import { encode } from '../../utils/encoding.js'
 
 export default {
   name: 'DefaultTab',
@@ -86,7 +87,12 @@ export default {
         type: 'books'
       }
       const queryString = new URLSearchParams(newQuery).toString()
-      return `${this.$route.path}?${queryString}`
+
+      // Codificar la cadena de consulta
+      const encodedQuery = encode(queryString)
+
+      // Retornar la URL codificada
+      return `${this.$route.path}?q=${encodedQuery}`
     }
   },
   mounted () {
