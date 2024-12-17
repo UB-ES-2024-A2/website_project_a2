@@ -2,18 +2,17 @@
   <div class="view-as gradient-custom-header">
 
      <!-- Filter options -->
-      <div class="filter-options-wrap" v-if="token && currentTab !== 'book-page'">
+      <div class="filter-options-wrap" v-if="token && currentTab !== 'book-page' && currentTab !== 'profile' && currentTab !== 'information'">
         <div class="filter-options" role="toolbar">
           <!-- All filter -->
           <Transition name="slide-up">
-            <button id="filterAll" class="filter-btn" v-show="!filterBooks && !filterUsers" :class="{'button-selected': filterAll}">All</button>
+            <button id="filterAll" class="filter-btn" v-show="!filterBooks" :class="{'button-selected': filterAll}">All</button>
           </Transition>
           <Transition name="slide-up">
-            <button id="undoFilter" class="filter-btn clear-btn" v-show="filterBooks || filterUsers" @click="clearFilter">X</button>
+            <button id="undoFilter" class="filter-btn clear-btn" v-show="filterBooks" @click="clearFilter">X</button>
 
           </Transition>
-          <button id="filterBooks" class="filter-btn" :class="{'button-selected': filterBooks}" v-show="!filterUsers" @click="selectFilter('filterBooks')">Books</button>
-          <button id="filterUsers" class="filter-btn" :class="{'button-selected': filterUsers}" v-show="!filterBooks" @click="selectFilter('filterUsers')">Users</button>
+          <button id="filterBooks" class="filter-btn" :class="{'button-selected': filterBooks}" @click="selectFilter('filterBooks')">Books</button>
 
           <!-- Genres Selected -->
           <div class="content-selected">
@@ -49,7 +48,7 @@
       </div>
 
       <!-- Toogle View: Grid, List and Compact -->
-      <div class="toggle-wrap" v-if="currentTab !== 'book-page'">
+      <div class="toggle-wrap" v-if="currentTab !== 'book-page' && currentTab !== 'profile' && currentTab !== 'information'">
         <input type="radio" id="toggle1" name="toggle" class="toggleCheckbox" @click="setView('grid')" :checked="view === 'grid'"/>
         <input type="radio" id="toggle2" name="toggle" class="toggleCheckbox" @click="setView('list')" :checked="view === 'list'"/>
         <input type="radio" id="toggle3" name="toggle" class="toggleCheckbox" @click="setView('compact')" :checked="view === 'compact'"/>
@@ -99,7 +98,6 @@ export default {
     return {
       filterAll: true,
       filterBooks: false,
-      filterUsers: false,
       filters: ['filterAll'],
       genresList: {
         'Fiction': true,
@@ -143,7 +141,6 @@ export default {
 
       this.filterAll = filterList.includes('filterAll')
       this.filterBooks = filterList.includes('filterBooks')
-      this.filterUsers = filterList.includes('filterUsers')
     },
     selectFilter (filterId) {
       const filter = document.getElementById(filterId)
@@ -169,7 +166,6 @@ export default {
     clearFilter () {
       this.filterAll = true
       this.filterBooks = false
-      this.filterUsers = false
 
       this.filters = ['filterAll']
       Object.keys(this.genresList).forEach((genre) => {

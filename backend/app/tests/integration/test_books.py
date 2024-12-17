@@ -1,6 +1,68 @@
 """ Test suite for book-related endpoints """
 from fastapi.testclient import TestClient
 
+def test_get_readbooks(client: TestClient, db):
+    """
+    Test case for getting
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+    Asserts:
+        - The response status code is 200.
+        - The response body contains a "data" key with a list of books.
+        - The response contains a "count" key with the total number of books.
+    """
+    id_user = 22
+    id_book = 3
+    response = client.get(f"/api/v1/readbooks/readbooks/{id_user}/{id_book}")
+    assert response.status_code == 200
+
+    data = response.json()
+
+    print(data)
+
+    assert "id_user" in data
+    assert "id_book" in data
+    assert "id_entry" in data
+
+
+def test_get_mybooks(client: TestClient, db):
+    """
+    Test case for getting
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+    Asserts:
+        - The response status code is 200.
+        - The response body contains a "data" key with a list of books.
+        - The response contains a "count" key with the total number of books.
+    """
+    id_user = 24
+    response = client.get(f"/api/v1/mybooks/{id_user}")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    data = response.json()
+
+    assert "data" in data
+    assert isinstance(data["data"], list)
+    assert len(data["data"]) <= 20
+
+    for book in data["data"]:
+        assert "id_book" in book
+        assert "title" in book
+        assert "authors" in book
+        assert "synopsis" in book
+        assert "buy_link" in book
+        assert "genres" in book
+        assert "rating" in book
+        assert "editorial" in book
+        assert "comments" in book
+        assert "publication_date" in book
+        assert "image" in book
+
+    assert "count" in data
+    assert isinstance(data["count"], int)
+
+
 def test_read_top5_matched_books(client: TestClient, db) -> None:
     """
     Test case for reading top 5 matched books based on a search keyword.
