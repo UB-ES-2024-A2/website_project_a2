@@ -261,9 +261,7 @@ export default {
       }
     },
     setPageSearch () {
-      if (this.actualPage !== PageEnum.SEARCH) {
-        this.$emit('search-selected', [this.textInput, this.type])
-      }
+      this.$emit('search-selected', [this.textInput, this.type])
     },
     setPageInfo () {
       if (this.actualPage !== PageEnum.INFO) {
