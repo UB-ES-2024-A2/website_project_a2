@@ -277,7 +277,6 @@ export default {
   },
   methods: {
     processAverageRatingsByGenre (books) {
-      console.log('prova', this.booksRatings)
       const defaultGenres = [
         'Fiction', 'Classic', 'Romance', 'Adventure',
         'Fantasy', 'Horror', 'Epic', 'Science Fiction'
