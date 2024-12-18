@@ -17,6 +17,12 @@ def create_readbook(session: SessionDep, readbook_in: ReadBookCreate) -> Any:
     """
     try:
         cursor = session.cursor()
+        exists = crud.readbooks.check_readbook_exists(cursor=cursor, readbook_in=readbook_in)
+        if exists:
+            raise HTTPException(
+                status_code=400,
+                detail="The book is already marked as read for this user."
+            )
         readbook_out = crud.readbooks.create_readbook(cursor=cursor, readbook_in=readbook_in)
         session.commit()
 

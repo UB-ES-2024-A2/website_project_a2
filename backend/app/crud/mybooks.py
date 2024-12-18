@@ -92,3 +92,24 @@ def get_mybooks(*, cursor, id_user: int) -> Any:
     else:
         return None
 
+def check_readbook_exists(*, cursor, readbook_in: ReadBookCreate) -> bool:
+    """
+    Checks if a book entry already exists for a given user in the 'readbooks' table.
+
+    Args:
+        cursor: The database cursor to interact with the database.
+        readbook_in (ReadBookCreate): The details of the book to check.
+
+    Returns:
+        bool: True if the book entry exists, False otherwise.
+    """
+    query_check_readbook = """
+        SELECT COUNT(*) 
+        FROM readbooks 
+        WHERE id_user = %s AND idBook = %s
+    """
+
+    cursor.execute(query_check_readbook, (readbook_in.id_user, readbook_in.id_book))
+    (count,) = cursor.fetchone()
+
+    return count > 0
