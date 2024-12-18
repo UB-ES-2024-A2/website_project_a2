@@ -103,5 +103,4 @@ def check_readbook_exists(*, cursor, readbook_in: ReadBookCreate) -> bool:
     
     cursor.execute(query_check_readbook, (readbook_in.id_user, readbook_in.id_book))
     (count,) = cursor.fetchone()
-
-return count > 0
+    return count > 0
