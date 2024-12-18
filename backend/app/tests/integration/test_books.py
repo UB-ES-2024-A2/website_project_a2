@@ -1,6 +1,29 @@
 """ Test suite for book-related endpoints """
 from fastapi.testclient import TestClient
 
+def test_get_ratings_per_user(client: TestClient):
+    """
+    Test case for reading user ratings
+
+    Args:
+        client (TestClient): The TestClient instance to send requests to the API.
+
+    Asserts:
+        - The response status code is 200.
+        - The response body contains a "data" key with a list of books.
+        - The response contains a "count" key with the total number of books.
+    """
+    id_user = 9
+    response = client.get(f"/api/v1/books/books/ratings/{id_user}")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    data = response.json()
+
+    assert "data" in data
+    assert isinstance(data["data"], list)
+
 def test_get_readbooks(client: TestClient, db):
     """
     Test case for getting

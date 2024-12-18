@@ -140,7 +140,6 @@ class BookService {
 
     return http.get(path, config)
       .then((res) => {
-        console.log('aaa', res)
         return res
       })
       .catch((error) => {
