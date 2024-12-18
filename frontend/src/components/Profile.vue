@@ -187,15 +187,16 @@
   </div>
 </div>
   </div>
-  
+
 </template>
 
 <script>
 import UserService from '../services/UserService'
 import BookService from '../services/BookService'
 import VueJwtDecode from 'vue-jwt-decode'
-import BarChart from './BarChart.vue'
+import BarChart from './Barchart.vue'
 import PieChart from './PieChart.vue'
+
 
 import { decode } from '../../utils/encoding.js'
 
