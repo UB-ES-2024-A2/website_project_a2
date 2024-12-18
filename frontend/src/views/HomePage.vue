@@ -53,7 +53,7 @@ const PageEnum = Object.freeze({
   HOME: 'default',
   BOOK: 'book-page',
   CATEGORY: 'category',
-  PROFILE: 'Profile',
+  PROFILE: 'profile',
   INFO: 'information'
 
 })
